@@ -1,0 +1,47 @@
+[
+  {
+    "id": 1,
+    "orderId": "#B2B-1048",
+    "customer": "Al Noor Jewellery",
+    "orderType": "Bulk Jewellery",
+    "amount": "SAR 18,450",
+    "status": "Processing",
+    "orderDate": "25 Sep 2026"
+  },
+  {
+    "id": 2,
+    "orderId": "#B2B-1047",
+    "customer": "Riyadh Gold Trading",
+    "orderType": "Raw Material",
+    "amount": "SAR 32,800",
+    "status": "Confirmed",
+    "orderDate": "24 Sep 2026"
+  },
+  {
+    "id": 3,
+    "orderId": "#B2B-1046",
+    "customer": "Al Masa Jewellery",
+    "orderType": "Bulk Jewellery",
+    "amount": "SAR 12,600",
+    "status": "Delivered",
+    "orderDate": "23 Sep 2026"
+  },
+  {
+    "id": 4,
+    "orderId": "#B2B-1045",
+    "customer": "Golden Line Trading",
+    "orderType": "Fixed Rate Order",
+    "amount": "SAR 27,950",
+    "status": "Pending",
+    "orderDate": "22 Sep 2026"
+  },
+  {
+    "id": 5,
+    "orderId": "#B2B-1044",
+    "customer": "Noor Al Khaleej",
+    "orderType": "Raw Material",
+    "amount": "SAR 41,200",
+    "status": "Delivered",
+    "orderDate": "21 Sep 2026"
+  }
+]
