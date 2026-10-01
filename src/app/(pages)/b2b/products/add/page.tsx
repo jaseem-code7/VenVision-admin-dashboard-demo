@@ -8,8 +8,6 @@ import {
   Trash2,
   Check,
   CheckCircle2,
-  Rotate3d,
-  FileCode,
   Image as ImageIcon,
   DollarSign,
   Package,
@@ -90,10 +88,6 @@ export default function AddB2BProductPage() {
       isPrimary: false
     }
   ])
-  const [has3DModel, setHas3DModel] = useState<boolean>(true)
-  const [enable3DPreview, setEnable3DPreview] = useState<boolean>(true)
-  const [modelFileName, setModelFileName] = useState('100g-cast-bar-assay.glb')
-  const [modelFileSize, setModelFileSize] = useState('3.8 MB')
 
   // 4. Inventory
   const [availableQuantity, setAvailableQuantity] = useState<number>(45)
@@ -505,7 +499,7 @@ export default function AddB2BProductPage() {
             <CardHeader className="pb-3">
               <CardTitle className="text-lg font-semibold text-foreground">Media</CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
-                Institutional product imagery, assay stamp photography, and optional 3D GLB model.
+                Institutional product imagery and assay stamp photography.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
@@ -570,70 +564,6 @@ export default function AddB2BProductPage() {
                 </div>
               </div>
 
-              <Separator />
-
-              {/* Optional 3D Model */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-medium text-foreground">Optional GLB 3D Model</div>
-                    <p className="text-xs text-muted-foreground">
-                      Enable interactive 360° inspection of bar serial markings and hallmark dimensions.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">3D Preview:</span>
-                    <Switch checked={enable3DPreview} onCheckedChange={setEnable3DPreview} />
-                  </div>
-                </div>
-
-                {!has3DModel ? (
-                  <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 p-4 text-center">
-                    <Rotate3d className="size-5 text-muted-foreground mb-1.5" />
-                    <span className="text-xs font-medium text-foreground">Upload .GLB Wholesale Model</span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="mt-2 h-7 text-xs rounded-lg"
-                      onClick={() => setHas3DModel(true)}
-                    >
-                      Choose .GLB
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between rounded-xl border border-border/80 bg-muted/20 p-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-1.5 rounded-lg bg-background border border-border text-foreground">
-                        <FileCode className="size-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-medium text-foreground">{modelFileName}</div>
-                        <div className="text-[11px] text-muted-foreground">{modelFileSize} &bull; WebGL Ready</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        Replace
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setHas3DModel(false)}
-                        className="h-7 text-xs text-destructive hover:bg-destructive/10"
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
             </CardContent>
           </Card>
 

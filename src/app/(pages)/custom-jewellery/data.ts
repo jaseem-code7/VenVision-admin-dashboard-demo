@@ -4,10 +4,15 @@ export type CustomRequestStatus =
   | 'New'
   | 'Under Review'
   | 'Awaiting Customer'
-  | 'Design Confirmed'
+  | 'Approved'
+  | 'Quote Sent'
+  | 'Payment Received'
   | 'In Production'
+  | 'Ready'
   | 'Completed'
   | 'Rejected'
+  | 'Quote Declined'
+  | 'Cancelled'
 
 export interface OriginalProductInfo {
   name: string
@@ -41,7 +46,34 @@ export interface QuotationInfo {
   customizationAdjustment?: number
   materialsEstimate?: number
   laborEstimate?: number
+  goldValue?: number
+  stoneValue?: number
+  makingCharge?: number
+  customizationCharge?: number
+  otherCharges?: number
+  discount?: number
+  vatRate?: number
+  subtotal?: number
+  vatAmount?: number
   finalQuote: number
+  quoteDate?: string
+  expiryDate?: string
+  adminNotes?: string
+}
+
+export interface StatusHistoryEntry {
+  id: string
+  status: CustomRequestStatus
+  label: string
+  date: string
+  detail?: string
+}
+
+export interface CustomWorkflowState {
+  status: CustomRequestStatus
+  quotation: QuotationInfo
+  history: StatusHistoryEntry[]
+  returnPolicyAcknowledgedAt?: string
 }
 
 export interface CustomJewelleryRequest {
@@ -60,6 +92,102 @@ export interface CustomJewelleryRequest {
   customChanges?: CustomChangesInfo
   fullCustomDesign?: FullCustomDesignInfo
   quotation: QuotationInfo
+  customerNotes?: string
+  history?: StatusHistoryEntry[]
+}
+
+export const IN_PROGRESS_CUSTOM_STATUSES: CustomRequestStatus[] = [
+  'Under Review',
+  'Approved',
+  'Quote Sent',
+  'Payment Received',
+  'In Production',
+  'Ready',
+  'Awaiting Customer'
+]
+
+export const REJECTED_CUSTOM_STATUSES: CustomRequestStatus[] = [
+  'Rejected',
+  'Quote Declined',
+  'Cancelled'
+]
+
+const getWorkflowStorageKey = (requestId: string) => `venvision-custom-workflow:${requestId}`
+
+const getInitialHistory = (request: CustomJewelleryRequest): StatusHistoryEntry[] => {
+  if (request.history?.length) return request.history
+
+  const history: StatusHistoryEntry[] = [
+    {
+      id: `${request.id}-submitted`,
+      status: 'New',
+      label: 'Request Submitted',
+      date: request.submittedDate,
+      detail: `${request.type} received from ${request.customerName}`
+    }
+  ]
+
+  if (request.status !== 'New') {
+    history.push({
+      id: `${request.id}-${request.status.toLowerCase().replaceAll(' ', '-')}`,
+      status: request.status,
+      label: request.status,
+      date: request.submittedDate,
+      detail: request.status === 'Quote Sent' ? `SAR ${request.quotation.finalQuote.toLocaleString('en-US')}` : undefined
+    })
+  }
+
+  return history
+}
+
+export const getInitialCustomWorkflow = (request: CustomJewelleryRequest): CustomWorkflowState => {
+  const goldValue = request.quotation.goldValue ?? request.quotation.materialsEstimate ?? request.quotation.originalPrice ?? 0
+  const stoneValue = request.quotation.stoneValue ?? 0
+  const makingCharge = request.quotation.makingCharge ?? request.quotation.laborEstimate ?? 0
+  const customizationCharge = request.quotation.customizationCharge ?? request.quotation.customizationAdjustment ?? 0
+  const otherCharges = request.quotation.otherCharges ?? 0
+  const discount = request.quotation.discount ?? 0
+  const vatRate = request.quotation.vatRate ?? 15
+  const subtotal = Math.max(0, goldValue + stoneValue + makingCharge + customizationCharge + otherCharges - discount)
+  const vatAmount = subtotal * (vatRate / 100)
+
+  return {
+    status: request.status,
+    quotation: {
+      ...request.quotation,
+      goldValue,
+      stoneValue,
+      makingCharge,
+      customizationCharge,
+      otherCharges,
+      discount,
+      vatRate,
+      subtotal,
+      vatAmount,
+      finalQuote: subtotal + vatAmount
+    },
+    history: getInitialHistory(request)
+  }
+}
+
+export const loadCustomWorkflow = (request: CustomJewelleryRequest): CustomWorkflowState => {
+  const fallback = getInitialCustomWorkflow(request)
+
+  if (typeof window === 'undefined') return fallback
+
+  try {
+    const stored = window.localStorage.getItem(getWorkflowStorageKey(request.id))
+
+    return stored ? { ...fallback, ...JSON.parse(stored) } : fallback
+  } catch {
+    return fallback
+  }
+}
+
+export const saveCustomWorkflow = (requestId: string, workflow: CustomWorkflowState) => {
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem(getWorkflowStorageKey(requestId), JSON.stringify(workflow))
+  }
 }
 
 export const MOCK_CUSTOM_REQUESTS: CustomJewelleryRequest[] = [
@@ -135,7 +263,7 @@ export const MOCK_CUSTOM_REQUESTS: CustomJewelleryRequest[] = [
     }
   },
 
-  // 3. REQ-7093: Full Custom Design (Design Confirmed)
+  // 3. REQ-7093: Full Custom Design (Approved)
   {
     id: 'REQ-7093',
     type: 'Full Custom Design',
@@ -149,7 +277,7 @@ export const MOCK_CUSTOM_REQUESTS: CustomJewelleryRequest[] = [
       'https://images.unsplash.com/photo-1611591475155-4284ec28d351?w=800&auto=format&fit=crop&q=80',
       'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&auto=format&fit=crop&q=80'
     ],
-    status: 'Design Confirmed',
+    status: 'Approved',
     submittedDate: '23 Sep 2026, 10:15',
     dateCategory: 'Last 7 Days',
     fullCustomDesign: {
@@ -579,7 +707,7 @@ export const MOCK_CUSTOM_REQUESTS: CustomJewelleryRequest[] = [
     }
   },
 
-  // 16. REQ-7106: Product Customization (Design Confirmed)
+  // 16. REQ-7106: Product Customization (Quote Sent)
   {
     id: 'REQ-7106',
     type: 'Product Customization',
@@ -591,7 +719,7 @@ export const MOCK_CUSTOM_REQUESTS: CustomJewelleryRequest[] = [
     referenceImages: [
       'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=800&auto=format&fit=crop&q=80'
     ],
-    status: 'Design Confirmed',
+    status: 'Quote Sent',
     submittedDate: '17 Sep 2026, 14:00',
     dateCategory: 'Last 30 Days',
     originalProduct: {

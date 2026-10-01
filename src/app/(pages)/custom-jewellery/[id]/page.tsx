@@ -1,650 +1,409 @@
 'use client'
 
-import React, { useState, use } from 'react'
+import React, { use, useEffect, useMemo, useState } from 'react'
+
 import Link from 'next/link'
 import {
-  Sparkles,
   ArrowLeft,
-  Calendar,
-  User,
-  Phone,
-  Mail,
-  DollarSign,
-  Printer,
-  Send,
-  MessageSquare,
   CheckCircle2,
   Clock,
-  Ban,
-  SlidersHorizontal,
-  Layers,
-  ArrowRight,
   ExternalLink,
-  ChevronRight,
-  Gem,
-  Plus
+  Mail,
+  MessageSquare,
+  Phone,
+  Send,
+  ShieldCheck,
+  Sparkles,
+  User,
+  XCircle
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
+
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { CUSTOM_RETURN_POLICY } from '@/lib/return-eligibility'
 import {
+  type CustomRequestStatus,
+  type QuotationInfo,
+  type StatusHistoryEntry,
   MOCK_CUSTOM_REQUESTS,
-  CustomRequestStatus,
-  CustomJewelleryRequest
+  getInitialCustomWorkflow,
+  loadCustomWorkflow,
+  saveCustomWorkflow
 } from '../data'
 
-const sharedStatuses: CustomRequestStatus[] = [
-  'New',
-  'Under Review',
-  'Awaiting Customer',
-  'Design Confirmed',
+const quotationStatuses: CustomRequestStatus[] = [
+  'Approved',
+  'Quote Sent',
+  'Payment Received',
   'In Production',
+  'Ready',
   'Completed',
-  'Rejected'
+  'Quote Declined'
 ]
 
-export default function CustomJewelleryDetailPage({
-  params
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const resolvedParams = use(params)
-  const requestId = resolvedParams.id || 'REQ-7091'
+const getStatusBadgeClass = (status: CustomRequestStatus) => {
+  if (status === 'New') return 'border-sky-500/30 text-sky-400 bg-sky-500/10'
+  if (status === 'Under Review') return 'border-amber-500/30 text-amber-400 bg-amber-500/10'
+  if (status === 'Awaiting Customer') return 'border-orange-500/30 text-orange-400 bg-orange-500/10'
+  if (status === 'Approved') return 'border-indigo-500/30 text-indigo-400 bg-indigo-500/10'
+  if (status === 'Quote Sent') return 'border-cyan-500/30 text-cyan-400 bg-cyan-500/10'
+  if (status === 'Payment Received') return 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
+  if (status === 'In Production') return 'border-purple-500/30 text-purple-400 bg-purple-500/10'
+  if (status === 'Ready') return 'border-teal-500/30 text-teal-400 bg-teal-500/10'
+  if (status === 'Completed') return 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
 
-  const request: CustomJewelleryRequest =
-    MOCK_CUSTOM_REQUESTS.find(r => r.id.toLowerCase() === requestId.toLowerCase()) ||
-    MOCK_CUSTOM_REQUESTS[0]
+  return 'border-rose-500/30 text-rose-400 bg-rose-500/10'
+}
 
-  const [currentStatus, setCurrentStatus] = useState<CustomRequestStatus>(request.status)
-  const [quotedAmount, setQuotedAmount] = useState<string>(
-    request.quotation.finalQuote.toString()
-  )
-  const [adminNotes, setAdminNotes] = useState([
-    {
-      id: 'n1',
-      author: 'Master Goldsmith Mansoor',
-      date: '24 Sep 2026, 12:30',
-      text: 'Verified alloy composition and stone specifications. Quotation confirmed within client tolerances.'
-    },
-    {
-      id: 'n2',
-      author: 'Atelier Reception',
-      date: '24 Sep 2026, 11:30',
-      text: 'Client contacted via WhatsApp. Customer confirmed desired dimensions and receipt of initial estimate.'
+export default function CustomJewelleryDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
+
+  const request =
+    MOCK_CUSTOM_REQUESTS.find(item => item.id.toLowerCase() === id.toLowerCase()) ?? MOCK_CUSTOM_REQUESTS[0]
+
+  const initialWorkflow = getInitialCustomWorkflow(request)
+
+  const [currentStatus, setCurrentStatus] = useState<CustomRequestStatus>(initialWorkflow.status)
+  const [quotation, setQuotation] = useState<QuotationInfo>(initialWorkflow.quotation)
+  const [history, setHistory] = useState<StatusHistoryEntry[]>(initialWorkflow.history)
+  const [internalNotes, setInternalNotes] = useState<string[]>([])
+  const [newInternalNote, setNewInternalNote] = useState('')
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      const stored = loadCustomWorkflow(request)
+
+      setCurrentStatus(stored.status)
+      setQuotation(stored.quotation)
+      setHistory(stored.history)
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [request])
+
+  const totals = useMemo(() => {
+    const subtotal = Math.max(
+      0,
+      (quotation.goldValue ?? 0) +
+        (quotation.stoneValue ?? 0) +
+        (quotation.makingCharge ?? 0) +
+        (quotation.customizationCharge ?? 0) +
+      (quotation.otherCharges ?? 0) -
+        (quotation.discount ?? 0)
+    )
+
+    const vatAmount = subtotal * ((quotation.vatRate ?? 15) / 100)
+
+    return { subtotal, vatAmount, finalQuote: subtotal + vatAmount }
+  }, [quotation])
+
+  const persistWorkflow = (
+    status: CustomRequestStatus,
+    nextQuotation: QuotationInfo,
+    nextHistory: StatusHistoryEntry[]
+  ) => {
+    saveCustomWorkflow(request.id, { status, quotation: nextQuotation, history: nextHistory })
+  }
+
+  const transitionTo = (status: CustomRequestStatus, label: string, detail?: string) => {
+    const entry: StatusHistoryEntry = {
+      id: `${request.id}-${Date.now()}`,
+      status,
+      label,
+      date: new Date().toLocaleString('en-GB'),
+      detail
     }
-  ])
-  const [newNote, setNewNote] = useState('')
 
-  const handleAddNote = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newNote.trim()) return
-    setAdminNotes(prev => [
-      ...prev,
-      {
-        id: `n-${Date.now()}`,
-        author: 'Admin (You)',
-        date: 'Just now',
-        text: newNote
-      }
-    ])
-    setNewNote('')
+    const nextHistory = [...history, entry]
+
+    setCurrentStatus(status)
+    setHistory(nextHistory)
+    persistWorkflow(status, quotation, nextHistory)
+    toast.success(label, { description: `Customer notification queued for ${request.customerName}.` })
+  }
+
+  const updateQuoteNumber = (
+    field:
+      | 'goldValue'
+      | 'stoneValue'
+      | 'makingCharge'
+      | 'customizationCharge'
+      | 'otherCharges'
+      | 'discount'
+      | 'vatRate',
+    value: string
+  ) => {
+    setQuotation(previous => ({ ...previous, [field]: Number(value) || 0 }))
+  }
+
+  const handleSendQuote = () => {
+    if (currentStatus !== 'Approved' || totals.finalQuote <= 0) return
+
+    const nextQuotation: QuotationInfo = {
+      ...quotation,
+      subtotal: totals.subtotal,
+      vatAmount: totals.vatAmount,
+      finalQuote: totals.finalQuote,
+      quoteDate: new Date().toLocaleString('en-GB')
+    }
+
+    const entry: StatusHistoryEntry = {
+      id: `${request.id}-quote-${Date.now()}`,
+      status: 'Quote Sent',
+      label: 'Quote Sent',
+      date: nextQuotation.quoteDate ?? 'Just now',
+      detail: `SAR ${totals.finalQuote.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+    }
+
+    const nextHistory = [...history, entry]
+
+    setQuotation(nextQuotation)
+    setCurrentStatus('Quote Sent')
+    setHistory(nextHistory)
+    persistWorkflow('Quote Sent', nextQuotation, nextHistory)
+    toast.success('Quote sent to customer', {
+      description: `SAR ${totals.finalQuote.toLocaleString('en-US', { minimumFractionDigits: 2 })} is ready for customer approval.`
+    })
+  }
+
+  const handleAddInternalNote = () => {
+    if (!newInternalNote.trim()) return
+
+    setInternalNotes(previous => [...previous, newInternalNote.trim()])
+    setNewInternalNote('')
     toast.success('Internal atelier note added')
   }
 
-  const handleUpdateStatus = (stage: CustomRequestStatus) => {
-    setCurrentStatus(stage)
-    toast.success(`Request status updated to "${stage}"`)
-  }
-
-  const getStatusBadgeClass = (status: CustomRequestStatus) => {
-    switch (status) {
-      case 'New':
-        return 'border-sky-500/30 text-sky-400 bg-sky-500/10'
-      case 'Under Review':
-        return 'border-amber-500/30 text-amber-400 bg-amber-500/10'
-      case 'Awaiting Customer':
-        return 'border-orange-500/30 text-orange-400 bg-orange-500/10'
-      case 'Design Confirmed':
-        return 'border-indigo-500/30 text-indigo-400 bg-indigo-500/10'
-      case 'In Production':
-        return 'border-purple-500/30 text-purple-400 bg-purple-500/10'
-      case 'Completed':
-        return 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
-      case 'Rejected':
-        return 'border-rose-500/30 text-rose-400 bg-rose-500/10'
-      default:
-        return 'border-muted-foreground/30 text-muted-foreground bg-muted/20'
-    }
-  }
+  const showQuotation = quotationStatuses.includes(currentStatus)
+  const quoteEditable = currentStatus === 'Approved'
 
   return (
     <div className='space-y-6 pb-12'>
-      {/* Header & Breadcrumb */}
-      <div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
+      <div className='flex flex-col gap-4 border-b border-border/40 pb-5 sm:flex-row sm:items-center sm:justify-between'>
         <div className='space-y-1'>
           <div className='flex items-center gap-2 text-xs text-muted-foreground'>
-            <Link href='/b2c/dashboard' className='hover:text-foreground transition-colors'>
-              Management
-            </Link>
+            <Link href='/custom-jewellery' className='hover:text-foreground'>Custom Jewellery</Link>
             <span>/</span>
-            <Link href='/custom-jewellery' className='hover:text-foreground transition-colors'>
-              Custom Jewellery
-            </Link>
-            <span>/</span>
-            <span className='font-mono font-medium text-foreground'>{request.id}</span>
+            <span className='font-mono text-foreground'>{request.id}</span>
           </div>
-          <div className='flex items-center gap-3'>
-            <h1 className='text-2xl font-bold tracking-tight text-foreground sm:text-3xl flex items-center gap-2'>
-              <Sparkles className='size-6 text-primary' />
-              {request.id}
+          <div className='flex flex-wrap items-center gap-2'>
+            <h1 className='flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground sm:text-3xl'>
+              <Sparkles className='size-6 text-primary' /> {request.id}
             </h1>
-            {request.type === 'Product Customization' ? (
-              <span className='inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border border-amber-500/30 bg-amber-500/10 text-amber-400'>
-                <SlidersHorizontal className='size-3' />
-                Product Customization
-              </span>
-            ) : (
-              <span className='inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border border-primary/30 bg-primary/10 text-primary'>
-                <Sparkles className='size-3' />
-                Full Custom Design
-              </span>
-            )}
-            <Badge
-              variant='outline'
-              className={`text-xs font-medium border px-2.5 py-0.5 ${getStatusBadgeClass(currentStatus)}`}
-            >
-              {currentStatus}
-            </Badge>
+            <Badge variant='outline'>{request.type}</Badge>
+            <Badge variant='outline' className={getStatusBadgeClass(currentStatus)}>{currentStatus}</Badge>
           </div>
-          <p className='text-xs sm:text-sm text-muted-foreground'>
-            {request.jewellery} inquiry submitted by {request.customerName} on {request.submittedDate}.
-          </p>
+          <p className='text-sm text-muted-foreground'>{request.jewellery} request from {request.customerName}</p>
         </div>
-
-        <div className='flex items-center gap-2'>
-          <Button
-            variant='outline'
-            onClick={() => toast.success('Printing Atelier Work Order Card...')}
-            className='h-9 text-xs border-border/80 gap-1.5'
-          >
-            <Printer className='size-3.5' />
-            Print Job Card
-          </Button>
-          <Link href='/custom-jewellery'>
-            <Button
-              variant='outline'
-              className='h-9 text-xs border-border/80 gap-1.5'
-            >
-              <ArrowLeft className='size-3.5' />
-              Back to Requests
-            </Button>
+        <div className='flex flex-wrap gap-2'>
+          <Link href={`/custom-jewellery/${request.id}/customer`} className='inline-flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-xs font-medium hover:bg-muted'>
+            Customer View <ExternalLink className='size-3.5' />
+          </Link>
+          <Link href='/custom-jewellery' className='inline-flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-xs font-medium hover:bg-muted'>
+            <ArrowLeft className='size-3.5' /> Back to Custom Jewellery Requests
           </Link>
         </div>
       </div>
 
-      {/* Main Grid: Left Details & Right Sidebar */}
-      <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
-        {/* LEFT 2 COLUMNS: TAILORED WORKFLOW UI */}
-        <div className='lg:col-span-2 space-y-6'>
-          {/* ================================================= */}
-          {/* WORKFLOW A: PRODUCT CUSTOMIZATION                 */}
-          {/* ================================================= */}
-          {request.type === 'Product Customization' && request.originalProduct && (
-            <div className='space-y-6'>
-              {/* Step 1: Original Product */}
-              <Card className='rounded-xl border border-border/80 bg-card p-5 shadow-xs space-y-4'>
-                <div className='flex items-center justify-between border-b border-border/70 pb-3'>
-                  <div className='flex items-center gap-2'>
-                    <span className='size-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold'>
-                      1
-                    </span>
-                    <h3 className='text-sm font-semibold text-foreground uppercase tracking-wider'>
-                      Original Product
-                    </h3>
-                  </div>
-                  <Badge variant='outline' className='text-xs font-mono'>
-                    SKU: {request.originalProduct.sku}
-                  </Badge>
-                </div>
-
-                <div className='flex flex-col sm:flex-row items-center sm:items-start gap-4'>
-                  <div className='relative size-28 rounded-lg border border-border/80 overflow-hidden bg-muted/40 shrink-0'>
-                    <img
-                      src={request.originalProduct.image}
-                      alt={request.originalProduct.name}
-                      className='size-full object-cover'
-                    />
-                  </div>
-                  <div className='space-y-1.5 text-center sm:text-left flex-1'>
-                    <h4 className='text-base font-bold text-foreground'>
-                      {request.originalProduct.name}
-                    </h4>
-                    <p className='text-xs text-muted-foreground'>
-                      Standard Catalog Category: <span className='text-foreground'>{request.originalProduct.category}</span>
-                    </p>
-                    <div className='text-sm font-bold text-primary font-mono mt-1'>
-                      Catalog Price: SAR {request.originalProduct.originalPrice.toLocaleString('en-US')}
-                    </div>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Step 2: Customer Requested Changes */}
-              <Card className='rounded-xl border border-border/80 bg-card p-5 shadow-xs space-y-4'>
-                <div className='flex items-center gap-2 border-b border-border/70 pb-3'>
-                  <span className='size-6 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-bold'>
-                    2
-                  </span>
-                  <h3 className='text-sm font-semibold text-foreground uppercase tracking-wider'>
-                    Customer Requested Changes
-                  </h3>
-                </div>
-
-                <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs'>
-                  {request.customChanges?.goldKarat && (
-                    <div className='rounded-lg border border-border/70 bg-muted/30 p-3'>
-                      <span className='text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block'>
-                        Gold Karat Modification
-                      </span>
-                      <span className='text-foreground font-semibold mt-1 block text-sm'>
-                        {request.customChanges.goldKarat}
-                      </span>
-                    </div>
-                  )}
-
-                  {request.customChanges?.goldColor && (
-                    <div className='rounded-lg border border-border/70 bg-muted/30 p-3'>
-                      <span className='text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block'>
-                        Gold Color Modification
-                      </span>
-                      <span className='text-foreground font-semibold mt-1 block text-sm'>
-                        {request.customChanges.goldColor}
-                      </span>
-                    </div>
-                  )}
-
-                  {request.customChanges?.size && (
-                    <div className='rounded-lg border border-border/70 bg-muted/30 p-3'>
-                      <span className='text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block'>
-                        Requested Custom Size
-                      </span>
-                      <span className='text-foreground font-semibold mt-1 block text-sm'>
-                        {request.customChanges.size}
-                      </span>
-                    </div>
-                  )}
-
-                  {request.customChanges?.stone && (
-                    <div className='rounded-lg border border-border/70 bg-muted/30 p-3'>
-                      <span className='text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block'>
-                        Gemstone / Diamond Preference
-                      </span>
-                      <span className='text-foreground font-semibold mt-1 block text-sm'>
-                        {request.customChanges.stone}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {request.customChanges?.engraving && (
-                  <div className='rounded-lg border border-border/70 bg-muted/30 p-3 text-xs'>
-                    <span className='text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block'>
-                      Laser / Hand Engraving Details
-                    </span>
-                    <span className='text-primary font-mono font-bold mt-1 block text-sm italic'>
-                      {request.customChanges.engraving}
-                    </span>
-                  </div>
-                )}
-
-                {request.customChanges?.specialInstructions && (
-                  <div className='rounded-lg border border-border/70 bg-muted/30 p-3 text-xs'>
-                    <span className='text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block'>
-                      Special Atelier Instructions
-                    </span>
-                    <p className='text-muted-foreground mt-1 leading-relaxed'>
-                      {request.customChanges.specialInstructions}
-                    </p>
-                  </div>
-                )}
-              </Card>
-
-              {/* Step 3: Price / Quotation */}
-              <Card className='rounded-xl border border-border/80 bg-card p-5 shadow-xs space-y-4'>
-                <div className='flex items-center gap-2 border-b border-border/70 pb-3'>
-                  <span className='size-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold'>
-                    3
-                  </span>
-                  <h3 className='text-sm font-semibold text-foreground uppercase tracking-wider'>
-                    Price &amp; Quotation
-                  </h3>
-                </div>
-
-                <div className='rounded-lg border border-border/70 bg-muted/20 p-4 space-y-2.5 text-xs'>
-                  <div className='flex items-center justify-between text-muted-foreground'>
-                    <span>Original Base Retail:</span>
-                    <span className='font-mono font-medium'>
-                      SAR {request.quotation.originalPrice?.toLocaleString('en-US')}
-                    </span>
-                  </div>
-                  {request.quotation.customizationAdjustment !== undefined && (
-                    <div className='flex items-center justify-between text-muted-foreground'>
-                      <span>Customization Modification Surcharge:</span>
-                      <span className='font-mono font-medium text-amber-400'>
-                        {request.quotation.customizationAdjustment >= 0 ? '+' : ''}
-                        SAR {request.quotation.customizationAdjustment.toLocaleString('en-US')}
-                      </span>
-                    </div>
-                  )}
-                  <div className='h-px bg-border/70 my-2' />
-                  <div className='flex items-center justify-between text-base font-bold text-foreground'>
-                    <span>Final Custom Quoted Price:</span>
-                    <span className='font-mono text-primary text-xl'>
-                      SAR {request.quotation.finalQuote.toLocaleString('en-US')}
-                    </span>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          )}
-
-          {/* ================================================= */}
-          {/* WORKFLOW B: FULL CUSTOM DESIGN                    */}
-          {/* ================================================= */}
-          {request.type === 'Full Custom Design' && request.fullCustomDesign && (
-            <div className='space-y-6'>
-              {/* Step 1: Customer Idea & Concept */}
-              <Card className='rounded-xl border border-border/80 bg-card p-5 shadow-xs space-y-4'>
-                <div className='flex items-center gap-2 border-b border-border/70 pb-3'>
-                  <span className='size-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold'>
-                    1
-                  </span>
-                  <h3 className='text-sm font-semibold text-foreground uppercase tracking-wider'>
-                    Customer Idea &amp; Concept
-                  </h3>
-                </div>
-
-                <div className='space-y-3 text-xs'>
-                  <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
-                    <div className='rounded-lg border border-border/70 bg-muted/30 p-3'>
-                      <span className='text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block'>
-                        Jewellery Type
-                      </span>
-                      <span className='text-foreground font-bold mt-1 block text-sm'>
-                        {request.fullCustomDesign.jewelleryType}
-                      </span>
-                    </div>
-                    <div className='rounded-lg border border-border/70 bg-muted/30 p-3'>
-                      <span className='text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block'>
-                        Material &amp; Gold Karat
-                      </span>
-                      <span className='text-amber-400 font-semibold mt-1 block text-sm'>
-                        {request.fullCustomDesign.materialPreference}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className='rounded-lg border border-border/70 bg-muted/30 p-3.5'>
-                    <span className='text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1'>
-                      Customer Design Description
-                    </span>
-                    <p className='text-xs text-foreground italic leading-relaxed'>
-                      &ldquo;{request.fullCustomDesign.customerDescription}&rdquo;
-                    </p>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Step 2: Reference & Inspiration Images */}
-              <Card className='rounded-xl border border-border/80 bg-card p-5 shadow-xs space-y-4'>
-                <div className='flex items-center justify-between border-b border-border/70 pb-3'>
-                  <div className='flex items-center gap-2'>
-                    <span className='size-6 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-bold'>
-                      2
-                    </span>
-                    <h3 className='text-sm font-semibold text-foreground uppercase tracking-wider'>
-                      Reference &amp; Inspiration Photos
-                    </h3>
-                  </div>
-                  <span className='text-xs text-muted-foreground font-mono'>
-                    {request.fullCustomDesign.photos.length} uploaded image(s)
-                  </span>
-                </div>
-
-                <div className='grid grid-cols-2 sm:grid-cols-3 gap-3'>
-                  {request.fullCustomDesign.photos.map((img, idx) => (
-                    <div
-                      key={idx}
-                      className='group relative rounded-lg border border-border/80 overflow-hidden bg-muted/40 aspect-4/3'
-                    >
-                      <img
-                        src={img}
-                        alt={`Inspiration ${idx + 1}`}
-                        className='size-full object-cover group-hover:scale-105 transition-transform'
-                      />
-                      <div className='absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/70 text-[10px] text-white font-mono'>
-                        Photo #{idx + 1}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-
-              {/* Step 3: Requirements & Measurements */}
-              <Card className='rounded-xl border border-border/80 bg-card p-5 shadow-xs space-y-4'>
-                <div className='flex items-center gap-2 border-b border-border/70 pb-3'>
-                  <span className='size-6 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold'>
-                    3
-                  </span>
-                  <h3 className='text-sm font-semibold text-foreground uppercase tracking-wider'>
-                    Requirements &amp; Measurements
-                  </h3>
-                </div>
-
-                <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs'>
-                  <div className='rounded-lg border border-border/70 bg-muted/30 p-3'>
-                    <span className='text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block'>
-                      Target Size / Measurements
-                    </span>
-                    <span className='text-foreground font-semibold mt-1 block text-sm'>
-                      {request.fullCustomDesign.sizeMeasurements}
-                    </span>
-                  </div>
-
-                  {request.fullCustomDesign.customerBudget ? (
-                    <div className='rounded-lg border border-border/70 bg-muted/30 p-3'>
-                      <span className='text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block'>
-                        Customer Budget Guidance
-                      </span>
-                      <span className='text-emerald-400 font-mono font-bold mt-1 block text-sm'>
-                        SAR {request.fullCustomDesign.customerBudget.toLocaleString('en-US')}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className='rounded-lg border border-border/70 bg-muted/30 p-3'>
-                      <span className='text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block'>
-                        Customer Budget Guidance
-                      </span>
-                      <span className='text-muted-foreground italic mt-1 block text-sm'>
-                        No budget entered by customer
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {request.fullCustomDesign.additionalRequirements && (
-                  <div className='rounded-lg border border-border/70 bg-muted/30 p-3 text-xs'>
-                    <span className='text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block'>
-                      Additional Requirements &amp; Notes
-                    </span>
-                    <p className='text-muted-foreground mt-1 leading-relaxed'>
-                      {request.fullCustomDesign.additionalRequirements}
-                    </p>
-                  </div>
-                )}
-              </Card>
-
-              {/* Step 4: Price & Quotation */}
-              <Card className='rounded-xl border border-border/80 bg-card p-5 shadow-xs space-y-4'>
-                <div className='flex items-center gap-2 border-b border-border/70 pb-3'>
-                  <span className='size-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold'>
-                    4
-                  </span>
-                  <h3 className='text-sm font-semibold text-foreground uppercase tracking-wider'>
-                    Atelier Price &amp; Quotation
-                  </h3>
-                </div>
-
-                <div className='rounded-lg border border-border/70 bg-muted/20 p-4 space-y-2.5 text-xs'>
-                  {request.quotation.materialsEstimate && (
-                    <div className='flex items-center justify-between text-muted-foreground'>
-                      <span>Materials Estimate (Gold + Gems):</span>
-                      <span className='font-mono font-medium'>
-                        SAR {request.quotation.materialsEstimate.toLocaleString('en-US')}
-                      </span>
-                    </div>
-                  )}
-                  {request.quotation.laborEstimate && (
-                    <div className='flex items-center justify-between text-muted-foreground'>
-                      <span>Master Atelier Labor &amp; Setting:</span>
-                      <span className='font-mono font-medium'>
-                        SAR {request.quotation.laborEstimate.toLocaleString('en-US')}
-                      </span>
-                    </div>
-                  )}
-                  <div className='h-px bg-border/70 my-2' />
-                  <div className='flex items-center justify-between text-base font-bold text-foreground'>
-                    <span>Total Final Quotation:</span>
-                    <span className='font-mono text-primary text-xl'>
-                      SAR {request.quotation.finalQuote.toLocaleString('en-US')}
-                    </span>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          )}
-        </div>
-
-        {/* RIGHT 1 COLUMN: STATUS WORKFLOW, CUSTOMER INFO, NOTES */}
-        <div className='space-y-6'>
-          {/* Status Management Card */}
-          <Card className='rounded-xl border border-border/80 bg-card p-5 shadow-xs space-y-4'>
+      <div className='grid gap-6 lg:grid-cols-3'>
+        <div className='space-y-6 lg:col-span-2'>
+          <Card className='space-y-4 rounded-xl border-border/80 p-5 shadow-xs'>
             <div className='flex items-center justify-between border-b border-border/70 pb-3'>
-              <h3 className='text-xs font-semibold uppercase tracking-wider text-muted-foreground'>
-                Status &amp; Stage
-              </h3>
-              <Badge
-                variant='outline'
-                className={`text-[10px] font-medium border px-2 py-0.5 ${getStatusBadgeClass(currentStatus)}`}
-              >
-                {currentStatus}
-              </Badge>
+              <h2 className='text-base font-semibold'>Request Review</h2>
+              <span className='text-xs text-muted-foreground'>{request.submittedDate}</span>
             </div>
-
-            <div className='space-y-1.5'>
-              <label className='text-xs text-muted-foreground'>Update Request Status:</label>
-              <select
-                value={currentStatus}
-                onChange={e => handleUpdateStatus(e.target.value as CustomRequestStatus)}
-                className='w-full h-9 rounded-md border border-border/80 bg-background/60 px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary'
-              >
-                {sharedStatuses.map(st => (
-                  <option key={st} value={st}>
-                    {st}
-                  </option>
-                ))}
-              </select>
+            <dl className='grid gap-4 text-sm sm:grid-cols-2'>
+              <div><dt className='text-xs text-muted-foreground'>Request ID</dt><dd className='mt-1 font-mono font-semibold'>{request.id}</dd></div>
+              <div><dt className='text-xs text-muted-foreground'>Customer</dt><dd className='mt-1 font-semibold'>{request.customerName}</dd></div>
+              <div><dt className='text-xs text-muted-foreground'>Jewellery Type</dt><dd className='mt-1 font-semibold'>{request.jewellery}</dd></div>
+              <div><dt className='text-xs text-muted-foreground'>Request Type</dt><dd className='mt-1 font-semibold'>{request.type}</dd></div>
+            </dl>
+            <div className='rounded-lg border border-border/70 bg-muted/20 p-4'>
+              <div className='text-xs font-semibold uppercase tracking-wider text-muted-foreground'>Customer Instructions</div>
+              <p className='mt-2 text-sm leading-relaxed text-foreground'>{request.requestDetails}</p>
             </div>
-
-            <div className='pt-2 border-t border-border/70'>
-              <label className='text-xs text-muted-foreground block mb-1'>Quotation Amount (SAR):</label>
-              <div className='flex items-center gap-2'>
-                <Input
-                  value={quotedAmount}
-                  onChange={e => setQuotedAmount(e.target.value)}
-                  className='h-8 text-xs font-mono'
-                />
-                <Button
-                  size='sm'
-                  onClick={() => toast.success(`Quotation updated to SAR ${quotedAmount}`)}
-                  className='h-8 px-3 text-xs'
-                >
-                  Save
-                </Button>
+            {(request.customerNotes || request.customChanges?.specialInstructions || request.fullCustomDesign?.additionalRequirements) && (
+              <div className='rounded-lg border border-border/70 bg-muted/20 p-4'>
+                <div className='text-xs font-semibold uppercase tracking-wider text-muted-foreground'>Customer Notes</div>
+                <p className='mt-2 text-sm leading-relaxed text-muted-foreground'>
+                  {request.customerNotes ?? request.customChanges?.specialInstructions ?? request.fullCustomDesign?.additionalRequirements}
+                </p>
               </div>
-            </div>
+            )}
           </Card>
 
-          {/* Customer Profile Card */}
-          <Card className='rounded-xl border border-border/80 bg-card p-5 shadow-xs space-y-3.5'>
-            <h3 className='text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/70 pb-2.5'>
-              Customer Information
-            </h3>
-            <div className='space-y-2.5 text-xs'>
-              <div className='flex items-center gap-2 text-foreground font-semibold'>
-                <User className='size-3.5 text-muted-foreground' />
-                <span>{request.customerName}</span>
+          {request.type === 'Product Customization' && request.originalProduct && (
+            <Card className='space-y-4 rounded-xl border-border/80 p-5 shadow-xs'>
+              <div className='border-b border-border/70 pb-3'><h2 className='text-base font-semibold'>Original Product &amp; Requested Changes</h2></div>
+              <div className='flex flex-col gap-4 sm:flex-row'>
+                <img src={request.originalProduct.image} alt={request.originalProduct.name} className='size-28 rounded-lg border border-border object-cover' />
+                <div className='space-y-1'>
+                  <div className='font-semibold text-foreground'>{request.originalProduct.name}</div>
+                  <div className='font-mono text-xs text-muted-foreground'>{request.originalProduct.sku}</div>
+                  <div className='text-sm font-bold text-primary'>Original Price: SAR {request.originalProduct.originalPrice.toLocaleString()}</div>
+                  <p className='text-xs text-muted-foreground'>The catalogue price remains unchanged. This request receives its own quotation.</p>
+                </div>
               </div>
-              <div className='flex items-center gap-2 text-muted-foreground'>
-                <Mail className='size-3.5 text-muted-foreground' />
-                <a href={`mailto:${request.customerEmail}`} className='hover:text-foreground hover:underline'>
-                  {request.customerEmail}
-                </a>
-              </div>
-              <div className='flex items-center gap-2 text-muted-foreground'>
-                <Phone className='size-3.5 text-muted-foreground' />
-                <a href={`tel:${request.customerPhone}`} className='hover:text-foreground hover:underline font-mono'>
-                  {request.customerPhone}
-                </a>
-              </div>
-            </div>
-
-            <div className='pt-2 border-t border-border/70 flex items-center gap-2'>
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() => toast.success(`Opened WhatsApp dialogue for ${request.customerPhone}`)}
-                className='w-full h-8 text-xs gap-1.5'
-              >
-                <Phone className='size-3.5 text-emerald-400' />
-                WhatsApp Client
-              </Button>
-            </div>
-          </Card>
-
-          {/* Internal Atelier Notes Card */}
-          <Card className='rounded-xl border border-border/80 bg-card p-5 shadow-xs space-y-3.5'>
-            <h3 className='text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/70 pb-2.5 flex items-center justify-between'>
-              <span>Internal Atelier Notes</span>
-              <span className='font-mono text-[10px]'>{adminNotes.length} notes</span>
-            </h3>
-
-            <div className='space-y-3 max-h-56 overflow-y-auto pr-1'>
-              {adminNotes.map(n => (
-                <div key={n.id} className='rounded-lg border border-border/60 bg-muted/30 p-2.5 text-xs space-y-1'>
-                  <div className='flex items-center justify-between text-[10px] text-muted-foreground'>
-                    <span className='font-semibold text-foreground'>{n.author}</span>
-                    <span>{n.date}</span>
+              <div className='grid gap-3 text-sm sm:grid-cols-2'>
+                {Object.entries(request.customChanges ?? {}).map(([label, value]) => value && (
+                  <div key={label} className='rounded-lg border border-border/70 bg-muted/20 p-3'>
+                    <div className='text-[10px] font-semibold uppercase tracking-wider text-muted-foreground'>{label.replace(/([A-Z])/g, ' $1')}</div>
+                    <div className='mt-1 text-xs font-medium text-foreground'>{value}</div>
                   </div>
-                  <p className='text-muted-foreground leading-normal'>{n.text}</p>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {request.type === 'Full Custom Design' && request.fullCustomDesign && (
+            <Card className='space-y-4 rounded-xl border-border/80 p-5 shadow-xs'>
+              <div className='border-b border-border/70 pb-3'><h2 className='text-base font-semibold'>Full Custom Design Requirements</h2></div>
+              <dl className='grid gap-4 text-sm sm:grid-cols-2'>
+                <div><dt className='text-xs text-muted-foreground'>Jewellery Type</dt><dd className='mt-1 font-semibold'>{request.fullCustomDesign.jewelleryType}</dd></div>
+                <div><dt className='text-xs text-muted-foreground'>Preferred Metal / Purity</dt><dd className='mt-1 font-semibold'>{request.fullCustomDesign.materialPreference}</dd></div>
+                <div><dt className='text-xs text-muted-foreground'>Size / Measurements</dt><dd className='mt-1 font-semibold'>{request.fullCustomDesign.sizeMeasurements}</dd></div>
+                <div><dt className='text-xs text-muted-foreground'>Stones / Design Notes</dt><dd className='mt-1 font-semibold'>{request.fullCustomDesign.additionalRequirements ?? 'See customer requirements'}</dd></div>
+              </dl>
+              <div className='rounded-lg border border-border/70 bg-muted/20 p-4 text-sm leading-relaxed'>{request.fullCustomDesign.customerDescription}</div>
+            </Card>
+          )}
+
+          <Card className='space-y-4 rounded-xl border-border/80 p-5 shadow-xs'>
+            <div className='flex items-center justify-between border-b border-border/70 pb-3'>
+              <h2 className='text-base font-semibold'>Reference Images</h2>
+              <span className='text-xs text-muted-foreground'>{request.referenceImages.length} uploaded</span>
+            </div>
+            <div className='grid grid-cols-2 gap-3 sm:grid-cols-3'>
+              {request.referenceImages.map((image, index) => (
+                <img key={image} src={image} alt={`Reference ${index + 1}`} className='aspect-4/3 w-full rounded-lg border border-border object-cover' />
+              ))}
+            </div>
+          </Card>
+
+          {showQuotation && (
+            <Card className='space-y-5 rounded-xl border-border/80 p-5 shadow-xs'>
+              <div className='flex items-center justify-between border-b border-border/70 pb-3'>
+                <div>
+                  <h2 className='text-base font-semibold'>Quotation</h2>
+                  <p className='text-xs text-muted-foreground'>Customer-specific SAR pricing. The catalogue product price is not modified.</p>
+                </div>
+                {quotation.quoteDate && <Badge variant='outline'>Sent {quotation.quoteDate}</Badge>}
+              </div>
+              <div className='grid gap-4 sm:grid-cols-2'>
+                {([
+                  ['goldValue', 'Gold Value'],
+                  ['stoneValue', 'Stone / Diamond Value'],
+                  ['makingCharge', 'Making Charge'],
+                  ['customizationCharge', 'Customization Charge'],
+                  ['otherCharges', 'Other Charges'],
+                  ['discount', 'Discount']
+                ] as const).map(([field, label]) => (
+                  <label key={field} className='space-y-1.5 text-xs text-muted-foreground'>
+                    <span>{label} (SAR)</span>
+                    <Input type='number' min='0' value={quotation[field] ?? 0} disabled={!quoteEditable} onChange={event => updateQuoteNumber(field, event.target.value)} className='font-mono' />
+                  </label>
+                ))}
+                <label className='space-y-1.5 text-xs text-muted-foreground'>
+                  <span>VAT (%)</span>
+                  <Input type='number' min='0' value={quotation.vatRate ?? 15} disabled={!quoteEditable} onChange={event => updateQuoteNumber('vatRate', event.target.value)} className='font-mono' />
+                </label>
+                <label className='space-y-1.5 text-xs text-muted-foreground'>
+                  <span>Quote Expiry Date (optional)</span>
+                  <Input type='date' value={quotation.expiryDate ?? ''} disabled={!quoteEditable} onChange={event => setQuotation(previous => ({ ...previous, expiryDate: event.target.value }))} />
+                </label>
+              </div>
+              <label className='block space-y-1.5 text-xs text-muted-foreground'>
+                <span>Admin Notes for Customer</span>
+                <Textarea value={quotation.adminNotes ?? ''} disabled={!quoteEditable} onChange={event => setQuotation(previous => ({ ...previous, adminNotes: event.target.value }))} placeholder='Explain materials, craftsmanship, timing, or quote conditions.' />
+              </label>
+              <div className='space-y-2 rounded-xl border border-border/70 bg-muted/20 p-4 text-sm'>
+                <div className='flex justify-between text-muted-foreground'><span>Subtotal</span><span className='font-mono'>SAR {totals.subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
+                <div className='flex justify-between text-muted-foreground'><span>VAT ({quotation.vatRate ?? 15}%)</span><span className='font-mono'>SAR {totals.vatAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
+                <div className='flex justify-between border-t border-border/70 pt-2 text-base font-bold'><span>Final Quote</span><span className='font-mono text-primary'>SAR {totals.finalQuote.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></div>
+              </div>
+              {quoteEditable && (
+                <Button onClick={handleSendQuote} disabled={totals.finalQuote <= 0} className='gap-2'>
+                  <Send className='size-4' /> Send Quote to Customer
+                </Button>
+              )}
+            </Card>
+          )}
+
+          <Card className='space-y-4 rounded-xl border-border/80 p-5 shadow-xs'>
+            <div className='border-b border-border/70 pb-3'><h2 className='text-base font-semibold'>Status History</h2></div>
+            <div className='space-y-4'>
+              {history.map((entry, index) => (
+                <div key={entry.id} className='grid grid-cols-[20px_1fr] gap-3'>
+                  <div className='flex flex-col items-center'>
+                    <span className='mt-1 size-2.5 rounded-full bg-primary' />
+                    {index < history.length - 1 && <span className='mt-1 h-full w-px bg-border' />}
+                  </div>
+                  <div className='pb-2'>
+                    <div className='font-semibold text-sm'>{entry.label}</div>
+                    <div className='text-xs text-muted-foreground'>{entry.date}</div>
+                    {entry.detail && <div className='mt-1 text-xs text-muted-foreground'>{entry.detail}</div>}
+                  </div>
                 </div>
               ))}
             </div>
+          </Card>
+        </div>
 
-            <form onSubmit={handleAddNote} className='space-y-2 pt-2 border-t border-border/70'>
-              <Input
-                placeholder='Add note for goldsmith / CAD team...'
-                value={newNote}
-                onChange={e => setNewNote(e.target.value)}
-                className='h-8 text-xs'
-              />
-              <Button type='submit' size='sm' className='w-full h-8 text-xs gap-1.5'>
-                <Plus className='size-3.5' />
-                Add Atelier Note
-              </Button>
-            </form>
+        <div className='space-y-6'>
+          <Card className='space-y-2 rounded-xl border-border/80 p-5 shadow-xs'>
+            <h2 className='text-sm font-semibold'>Return Policy</h2>
+            <Badge variant='outline' className='border-amber-500/30 bg-amber-500/10 text-amber-400'>Non-returnable / Non-refundable</Badge>
+            <p className='text-xs leading-relaxed text-muted-foreground'>{CUSTOM_RETURN_POLICY} Serious fulfillment issues can be reviewed manually by an administrator.</p>
+          </Card>
+
+          <Card className='space-y-4 rounded-xl border-border/80 p-5 shadow-xs'>
+            <div className='flex items-center justify-between border-b border-border/70 pb-3'>
+              <h2 className='text-sm font-semibold'>Admin Review</h2>
+              <Badge variant='outline' className={getStatusBadgeClass(currentStatus)}>{currentStatus}</Badge>
+            </div>
+            {currentStatus === 'New' && (
+              <div className='space-y-2'>
+                <Button className='w-full' onClick={() => transitionTo('Under Review', 'Request moved to Under Review')}><ShieldCheck className='size-4' /> Start Review</Button>
+                <Button variant='outline' className='w-full' onClick={() => transitionTo('Awaiting Customer', 'More information requested')}><MessageSquare className='size-4' /> Request More Information</Button>
+              </div>
+            )}
+            {currentStatus === 'Under Review' && (
+              <div className='space-y-2'>
+                <Button className='w-full' onClick={() => transitionTo('Approved', 'Request Approved')}><CheckCircle2 className='size-4' /> Approve Request</Button>
+                <Button variant='outline' className='w-full' onClick={() => transitionTo('Awaiting Customer', 'More information requested')}><MessageSquare className='size-4' /> Request More Information</Button>
+                <Button variant='outline' className='w-full text-destructive' onClick={() => transitionTo('Rejected', 'Request Rejected')}><XCircle className='size-4' /> Reject Request</Button>
+              </div>
+            )}
+            {currentStatus === 'Awaiting Customer' && (
+              <div className='space-y-2'>
+                <Button className='w-full' onClick={() => transitionTo('Under Review', 'Review resumed after customer response')}><ShieldCheck className='size-4' /> Resume Review</Button>
+                <Button variant='outline' className='w-full' onClick={() => transitionTo('Cancelled', 'Request Cancelled')}>Cancel Request</Button>
+              </div>
+            )}
+            {currentStatus === 'Approved' && <p className='text-xs text-muted-foreground'>Approval recorded. Complete the quotation before contacting the customer for payment.</p>}
+            {currentStatus === 'Quote Sent' && <p className='text-xs text-muted-foreground'>Quote sent. Production stays locked until the customer accepts the quote and checkout confirms payment.</p>}
+            {currentStatus === 'Payment Received' && <Button className='w-full' onClick={() => transitionTo('In Production', 'Production Started')}>Start Production</Button>}
+            {currentStatus === 'In Production' && <Button className='w-full' onClick={() => transitionTo('Ready', 'Order Ready')}>Mark Ready</Button>}
+            {currentStatus === 'Ready' && <Button className='w-full' onClick={() => transitionTo('Completed', 'Request Completed')}>Complete Request</Button>}
+            {['Rejected', 'Quote Declined', 'Cancelled', 'Completed'].includes(currentStatus) && <p className='text-xs text-muted-foreground'>This request has reached a terminal status.</p>}
+          </Card>
+
+          <Card className='space-y-3 rounded-xl border-border/80 p-5 shadow-xs'>
+            <h2 className='border-b border-border/70 pb-3 text-sm font-semibold'>Customer</h2>
+            <div className='flex items-center gap-2 text-sm font-semibold'><User className='size-4 text-muted-foreground' /> {request.customerName}</div>
+            <a href={`mailto:${request.customerEmail}`} className='flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground'><Mail className='size-4' /> {request.customerEmail}</a>
+            <a href={`tel:${request.customerPhone}`} className='flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground'><Phone className='size-4' /> {request.customerPhone}</a>
+          </Card>
+
+          <Card className='space-y-3 rounded-xl border-border/80 p-5 shadow-xs'>
+            <h2 className='flex items-center gap-2 border-b border-border/70 pb-3 text-sm font-semibold'><Clock className='size-4' /> Internal Notes</h2>
+            {internalNotes.map((note, index) => <div key={`${note}-${index}`} className='rounded-lg bg-muted/30 p-3 text-xs text-muted-foreground'>{note}</div>)}
+            <Textarea value={newInternalNote} onChange={event => setNewInternalNote(event.target.value)} placeholder='Add a private atelier note…' />
+            <Button variant='outline' onClick={handleAddInternalNote} className='w-full'>Add Note</Button>
           </Card>
         </div>
       </div>

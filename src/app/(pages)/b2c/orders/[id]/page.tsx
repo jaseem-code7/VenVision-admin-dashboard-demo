@@ -32,6 +32,11 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { initialB2COrders } from '@/data/venvision-data'
+import {
+  CUSTOM_ACCOUNT_RETURN_LABEL,
+  CUSTOM_RETURN_POLICY,
+  isStandardReturnEligible
+} from '@/lib/return-eligibility'
 
 export default function B2COrderDetailPage() {
   const params = useParams()
@@ -41,6 +46,7 @@ export default function B2COrderDetailPage() {
   // Look up order or fallback to first order
   const order = initialB2COrders.find(o => o.id === orderId) || initialB2COrders[0]
   const [currentStatus, setCurrentStatus] = useState<string>(order.fulfillmentStatus)
+  const returnEligible = isStandardReturnEligible(order)
 
   const handleStatusChange = (newStatus: string) => {
     setCurrentStatus(newStatus)
@@ -237,6 +243,34 @@ export default function B2COrderDetailPage() {
               >
                 Save Status Change
               </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-xl border border-border/80 shadow-xs bg-card">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold text-foreground">Return Eligibility</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-xs">
+              {returnEligible ? (
+                <>
+                  <p className="text-muted-foreground">This catalogue jewellery order follows the standard VenVision return policy.</p>
+                  <Button
+                    type="button"
+                    disabled={currentStatus !== 'Delivered'}
+                    onClick={() => router.push(`/returns-refunds?orderId=${encodeURIComponent(order.orderNumber)}`)}
+                    className="w-full h-9 text-xs rounded-xl"
+                  >
+                    Request Return
+                  </Button>
+                  {currentStatus !== 'Delivered' && <p className="text-[11px] text-muted-foreground">Return requests become available after delivery.</p>}
+                </>
+              ) : (
+                <div className="space-y-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+                  <div className="font-semibold text-amber-400">{CUSTOM_ACCOUNT_RETURN_LABEL}</div>
+                  <p className="text-muted-foreground">{CUSTOM_RETURN_POLICY}</p>
+                  <p className="text-muted-foreground">Wrong item, manufacturing defect, or delivery damage can be reviewed manually by an administrator.</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

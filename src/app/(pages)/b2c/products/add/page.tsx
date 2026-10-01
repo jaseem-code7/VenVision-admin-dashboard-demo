@@ -8,8 +8,6 @@ import {
   Trash2,
   Check,
   CheckCircle2,
-  Rotate3d,
-  FileCode,
   Image as ImageIcon,
   DollarSign,
   Package,
@@ -29,7 +27,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -109,20 +106,14 @@ export default function AddB2CProductPage() {
     }
   ])
 
-  // 4. 3D Model
-  const [has3DModel, setHas3DModel] = useState<boolean>(true)
-  const [enable3DPreview, setEnable3DPreview] = useState<boolean>(true)
-  const [modelFileName, setModelFileName] = useState('solitaire-diamond-ring.glb')
-  const [modelFileSize, setModelFileSize] = useState('4.2 MB')
-
-  // 5. Inventory
+  // 4. Inventory
   const [stockQuantity, setStockQuantity] = useState<number>(8)
   const [lowStockAlert, setLowStockAlert] = useState<number>(2)
   const [availability, setAvailability] = useState<'In Stock' | 'Out of Stock' | 'Pre-order'>('In Stock')
   const [productStatus, setProductStatus] = useState<'Draft' | 'Active'>('Draft')
   const [visibility, setVisibility] = useState<'Published' | 'Hidden'>('Published')
 
-  // 6. Pricing
+  // 5. Pricing
   const currentPurityRate = useMemo(() => {
     const rateObj = initialGoldRates.find(r => r.karat === goldPurity)
     return rateObj ? rateObj.buyRateSAR : 234.35
@@ -253,9 +244,6 @@ export default function AddB2CProductPage() {
         </a>
         <a href="#product-images" className="px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors">
           Media
-        </a>
-        <a href="#3d-model" className="px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors">
-          3D Model
         </a>
         <a href="#inventory" className="px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors">
           Inventory
@@ -696,91 +684,7 @@ export default function AddB2CProductPage() {
             </CardContent>
           </Card>
 
-          {/* 4. 3D Model card */}
-          <Card id="3d-model" className="rounded-xl border border-border/80 shadow-xs bg-card">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg font-semibold text-foreground">3D Model</CardTitle>
-                  <CardDescription className="text-xs text-muted-foreground">
-                    Optional — enable interactive 360° product preview.
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Enable 3D Preview:</span>
-                  <Switch checked={enable3DPreview} onCheckedChange={setEnable3DPreview} />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {!has3DModel ? (
-                /* Upload box */
-                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 p-6 text-center">
-                  <Rotate3d className="size-6 text-muted-foreground mb-2" />
-                  <div className="text-sm font-medium text-foreground">Upload GLB Model</div>
-                  <p className="text-xs text-muted-foreground mt-0.5">Accepted: .GLB (3D WebGL format)</p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="mt-3 h-8 text-xs rounded-lg"
-                    onClick={() => setHas3DModel(true)}
-                  >
-                    Choose .GLB File
-                  </Button>
-                </div>
-              ) : (
-                /* Show after upload */
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between rounded-xl border border-border/80 bg-muted/20 p-3.5">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-background border border-border text-foreground">
-                        <FileCode className="size-4" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-foreground">{modelFileName}</div>
-                        <div className="text-xs text-muted-foreground">{modelFileSize} &bull; .GLB format</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        Replace
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setHas3DModel(false)}
-                        className="h-8 text-xs text-destructive hover:bg-destructive/10"
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Simple preview area */}
-                  {enable3DPreview && (
-                    <div className="rounded-xl border border-border bg-muted/10 p-4 text-center">
-                      <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                        <Rotate3d className="size-4 text-primary" />
-                        <span>360° Interactive Canvas Active</span>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground mt-1">
-                        Model will render in Three.js viewport on the customer storefront with PBR reflections.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* 5. Inventory card */}
+          {/* 4. Inventory card */}
           <Card id="inventory" className="rounded-xl border border-border/80 shadow-xs bg-card">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg font-semibold text-foreground">Inventory</CardTitle>
@@ -845,7 +749,7 @@ export default function AddB2CProductPage() {
             </CardContent>
           </Card>
 
-          {/* 6. Pricing card */}
+          {/* 5. Pricing card */}
           <Card id="pricing" className="rounded-xl border border-border/80 shadow-xs bg-card">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg font-semibold text-foreground">Pricing</CardTitle>
@@ -1093,15 +997,6 @@ export default function AddB2CProductPage() {
                     <span className="size-4 rounded-full border border-muted-foreground/40 shrink-0" />
                   )}
                   <span className="text-foreground">Product Images ({images.length})</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {has3DModel ? (
-                    <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
-                  ) : (
-                    <span className="size-4 rounded-full border border-muted-foreground/40 shrink-0" />
-                  )}
-                  <span className="text-muted-foreground">3D Model (optional)</span>
                 </div>
 
                 <div className="flex items-center gap-2">

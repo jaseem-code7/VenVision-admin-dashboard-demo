@@ -1,29 +1,21 @@
 'use client'
 
 import * as React from 'react'
+
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   RotateCcw,
   Search,
-  Filter,
   Plus,
   ChevronRight,
   ChevronLeft,
   DollarSign,
   Clock,
-  CheckCircle2,
-  AlertCircle,
-  FileText,
   Printer,
   MoreHorizontal,
   Eye,
-  Check,
-  X,
-  PackageCheck,
-  CreditCard,
-  Building2,
-  User,
-  ArrowUpDown
+  CreditCard
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -32,11 +24,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import {
   Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter
+  CardHeader
 } from '@/components/ui/card'
 import {
   Table,
@@ -70,16 +58,20 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Label } from '@/components/ui/label'
+import { initialB2COrders } from '@/data/venvision-data'
+import { handleClickableRow, handleClickableRowKeyDown } from '@/lib/clickable-row'
+import { CUSTOM_RETURN_POLICY, isStandardReturnEligible } from '@/lib/return-eligibility'
 
 import {
+  type ReturnItem,
+  type ReturnReason,
+  type ReturnStatus,
   MOCK_RETURNS,
-  ReturnItem,
-  ReturnStatus,
-  RefundStatus,
-  ReturnReason
+  loadReturnItem
 } from './data'
 
 export default function ReturnsRefundsPage() {
+  const router = useRouter()
   const [returnsList, setReturnsList] = React.useState<ReturnItem[]>(MOCK_RETURNS)
 
   // Filters State
@@ -87,7 +79,14 @@ export default function ReturnsRefundsPage() {
   const [returnStatusFilter, setReturnStatusFilter] = React.useState<string>('ALL')
   const [refundStatusFilter, setRefundStatusFilter] = React.useState<string>('ALL')
   const [channelFilter, setChannelFilter] = React.useState<string>('ALL')
-  const [dateFilter, setDateFilter] = React.useState<string>('ALL')
+
+  React.useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setReturnsList(MOCK_RETURNS.map(item => loadReturnItem(item)))
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [])
 
   // Pagination State
   const [currentPage, setCurrentPage] = React.useState(1)
@@ -95,6 +94,7 @@ export default function ReturnsRefundsPage() {
 
   // New Return Modal State
   const [isCreateOpen, setIsCreateOpen] = React.useState(false)
+
   const [newReturn, setNewReturn] = React.useState({
     orderId: '',
     customer: '',
@@ -108,7 +108,7 @@ export default function ReturnsRefundsPage() {
   // Status Badge Helpers
   const getReturnStatusBadge = (status: ReturnStatus) => {
     switch (status) {
-      case 'Requested':
+      case 'Return Requested':
       case 'Under Review':
         return (
           <Badge
@@ -118,8 +118,10 @@ export default function ReturnsRefundsPage() {
             {status}
           </Badge>
         )
-      case 'Approved':
-      case 'Item Received':
+      case 'Return Approved':
+      case 'Awaiting Product':
+      case 'Product Received':
+      case 'Quality Inspection':
         return (
           <Badge
             variant='outline'
@@ -128,16 +130,20 @@ export default function ReturnsRefundsPage() {
             {status}
           </Badge>
         )
-      case 'Completed':
+      case 'Refund Approved':
+      case 'Partial Refund Approved':
+      case 'Refund Processing':
+      case 'Refund Completed':
+      case 'Return Closed':
         return (
           <Badge
             variant='outline'
             className='bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 text-[11px] font-medium'
           >
-            Completed
+            {status}
           </Badge>
         )
-      case 'Rejected':
+      case 'Refund Rejected':
         return (
           <Badge
             variant='outline'
@@ -151,69 +157,30 @@ export default function ReturnsRefundsPage() {
     }
   }
 
-  const getRefundStatusBadge = (status: RefundStatus) => {
-    switch (status) {
-      case 'Not Started':
-        return (
-          <Badge variant='outline' className='text-[11px] text-muted-foreground border-border/80'>
-            Not Started
-          </Badge>
-        )
-      case 'Pending':
-      case 'Processing':
-        return (
-          <Badge
-            variant='outline'
-            className='bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 text-[11px] font-medium'
-          >
-            {status}
-          </Badge>
-        )
-      case 'Refunded':
-        return (
-          <Badge
-            variant='outline'
-            className='bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 text-[11px] font-medium'
-          >
-            Refunded
-          </Badge>
-        )
-      case 'Failed':
-        return (
-          <Badge
-            variant='outline'
-            className='bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20 text-[11px] font-medium'
-          >
-            Failed
-          </Badge>
-        )
-      default:
-        return <Badge variant='outline' className='text-[11px]'>{status}</Badge>
-    }
-  }
-
-  // Row Quick Actions
-  const handleUpdateStatus = (returnId: string, newReturnStatus: ReturnStatus, newRefundStatus?: RefundStatus) => {
-    setReturnsList(prev =>
-      prev.map(item => {
-        if (item.id === returnId) {
-          return {
-            ...item,
-            returnStatus: newReturnStatus,
-            ...(newRefundStatus ? { refundStatus: newRefundStatus } : {})
-          }
-        }
-        return item
-      })
-    )
-    toast.success(`Updated ${returnId}: ${newReturnStatus}`)
-  }
-
   // Create Return Submit
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+
     if (!newReturn.orderId || !newReturn.customer || !newReturn.product) {
       toast.error('Please fill in Order ID, Customer name and Product.')
+
+      return
+    }
+
+    const normalizedOrderId = newReturn.orderId.trim().toLowerCase()
+    const sourceOrder = initialB2COrders.find(
+      order => order.id.toLowerCase() === normalizedOrderId || order.orderNumber.toLowerCase() === normalizedOrderId
+    )
+    const isCustomRequestId = /^REQ-/i.test(newReturn.orderId.trim())
+    const isEligible = sourceOrder
+      ? isStandardReturnEligible(sourceOrder)
+      : isStandardReturnEligible({ productName: newReturn.product })
+
+    if (isCustomRequestId || !isEligible) {
+      toast.error(CUSTOM_RETURN_POLICY, {
+        description: 'Wrong item, manufacturing defect, or delivery damage must be handled as a manual admin exception.'
+      })
+
       return
     }
 
@@ -232,10 +199,10 @@ export default function ReturnsRefundsPage() {
       customerReturnFeeSAR: 0,
       venvisionReturnExpenseSAR: 25,
       restockingFeeSAR: 0,
-      refundAmountSAR: newReturn.productPrice,
+      refundAmountSAR: 0,
       returnReason: newReturn.returnReason,
-      returnStatus: 'Requested',
-      refundStatus: 'Pending',
+      returnStatus: 'Return Requested',
+      refundStatus: 'Not Started',
       requestedDate: 'Today',
       customerNotes: newReturn.notes || 'Initiated manually via VenVision Admin.',
       originalPaymentMethod: 'Mada Debit Card (Moyasar)',
@@ -243,10 +210,11 @@ export default function ReturnsRefundsPage() {
       trackingNumber: `SMSA${Math.floor(1000000 + Math.random() * 9000000)}`,
       timeline: [
         { stage: 'Return Requested', date: 'Today', completed: true, current: true },
-        { stage: 'Under Atelier Review', date: 'Pending', completed: false },
-        { stage: 'Item Received at Vault', date: 'Pending', completed: false },
-        { stage: 'Refund Processing', date: 'Pending', completed: false },
-        { stage: 'Completed', date: 'Pending', completed: false }
+        { stage: 'Eligibility Review', date: 'Pending', completed: false },
+        { stage: 'Awaiting Product', date: 'Pending', completed: false },
+        { stage: 'Quality Inspection', date: 'Pending', completed: false },
+        { stage: 'Refund Decision', date: 'Pending', completed: false },
+        { stage: 'Moyasar Refund', date: 'Pending', completed: false }
       ]
     }
 
@@ -259,6 +227,7 @@ export default function ReturnsRefundsPage() {
   const filteredReturns = React.useMemo(() => {
     return returnsList.filter(item => {
       const q = searchQuery.toLowerCase().trim()
+
       const matchesSearch =
         !q ||
         item.id.toLowerCase().includes(q) ||
@@ -275,18 +244,17 @@ export default function ReturnsRefundsPage() {
   }, [returnsList, searchQuery, returnStatusFilter, refundStatusFilter, channelFilter])
 
   const totalReturnsCount = 24 // Base total count matching user prompt
+
   const displayedReturns = filteredReturns.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   )
-  const totalPages = Math.ceil(filteredReturns.length / rowsPerPage) || 1
 
   const handleResetFilters = () => {
     setSearchQuery('')
     setReturnStatusFilter('ALL')
     setRefundStatusFilter('ALL')
     setChannelFilter('ALL')
-    setDateFilter('ALL')
     setCurrentPage(1)
     toast.info('Filters reset to default view.')
   }
@@ -423,38 +391,47 @@ export default function ReturnsRefundsPage() {
             {/* Filter Dropdowns */}
             <div className='flex flex-wrap items-center gap-2 text-xs'>
               {/* Return Status */}
-              <Select value={returnStatusFilter} onValueChange={v => { setReturnStatusFilter(v); setCurrentPage(1); }}>
+              <Select value={returnStatusFilter} onValueChange={v => { if (v) setReturnStatusFilter(v); setCurrentPage(1); }}>
                 <SelectTrigger className='h-9 w-36 text-xs rounded-lg bg-background border-border/80'>
                   <SelectValue placeholder='Return Status' />
                 </SelectTrigger>
                 <SelectContent className='rounded-xl'>
                   <SelectItem value='ALL'>All Return Statuses</SelectItem>
-                  <SelectItem value='Requested'>Requested</SelectItem>
+                  <SelectItem value='Return Requested'>Return Requested</SelectItem>
                   <SelectItem value='Under Review'>Under Review</SelectItem>
-                  <SelectItem value='Approved'>Approved</SelectItem>
-                  <SelectItem value='Item Received'>Item Received</SelectItem>
-                  <SelectItem value='Completed'>Completed</SelectItem>
-                  <SelectItem value='Rejected'>Rejected</SelectItem>
+                  <SelectItem value='Return Approved'>Return Approved</SelectItem>
+                  <SelectItem value='Awaiting Product'>Awaiting Product</SelectItem>
+                  <SelectItem value='Product Received'>Product Received</SelectItem>
+                  <SelectItem value='Quality Inspection'>Quality Inspection</SelectItem>
+                  <SelectItem value='Refund Approved'>Refund Approved</SelectItem>
+                  <SelectItem value='Partial Refund Approved'>Partial Refund Approved</SelectItem>
+                  <SelectItem value='Refund Rejected'>Refund Rejected</SelectItem>
+                  <SelectItem value='Refund Processing'>Refund Processing</SelectItem>
+                  <SelectItem value='Refund Completed'>Refund Completed</SelectItem>
+                  <SelectItem value='Return Closed'>Return Closed</SelectItem>
                 </SelectContent>
               </Select>
 
               {/* Refund Status */}
-              <Select value={refundStatusFilter} onValueChange={v => { setRefundStatusFilter(v); setCurrentPage(1); }}>
+              <Select value={refundStatusFilter} onValueChange={v => { if (v) setRefundStatusFilter(v); setCurrentPage(1); }}>
                 <SelectTrigger className='h-9 w-32 text-xs rounded-lg bg-background border-border/80'>
                   <SelectValue placeholder='Refund Status' />
                 </SelectTrigger>
                 <SelectContent className='rounded-xl'>
                   <SelectItem value='ALL'>All Refund Statuses</SelectItem>
                   <SelectItem value='Not Started'>Not Started</SelectItem>
-                  <SelectItem value='Pending'>Pending</SelectItem>
+                  <SelectItem value='Awaiting Inspection'>Awaiting Inspection</SelectItem>
+                  <SelectItem value='Approved'>Approved</SelectItem>
+                  <SelectItem value='Partial Approved'>Partial Approved</SelectItem>
+                  <SelectItem value='Rejected'>Rejected</SelectItem>
                   <SelectItem value='Processing'>Processing</SelectItem>
-                  <SelectItem value='Refunded'>Refunded</SelectItem>
+                  <SelectItem value='Completed'>Completed</SelectItem>
                   <SelectItem value='Failed'>Failed</SelectItem>
                 </SelectContent>
               </Select>
 
               {/* Channel */}
-              <Select value={channelFilter} onValueChange={v => { setChannelFilter(v); setCurrentPage(1); }}>
+              <Select value={channelFilter} onValueChange={v => { if (v) setChannelFilter(v); setCurrentPage(1); }}>
                 <SelectTrigger className='h-9 w-28 text-xs rounded-lg bg-background border-border/80'>
                   <SelectValue placeholder='Channel' />
                 </SelectTrigger>
@@ -498,25 +475,32 @@ export default function ReturnsRefundsPage() {
                 <TableHead className='py-3 font-semibold text-foreground'>Order ID</TableHead>
                 <TableHead className='py-3 font-semibold text-foreground'>Customer</TableHead>
                 <TableHead className='py-3 font-semibold text-foreground'>Product</TableHead>
-                <TableHead className='py-3 font-semibold text-foreground text-center'>Channel</TableHead>
+                <TableHead className='py-3 font-semibold text-foreground text-center'>Inspection Status</TableHead>
                 <TableHead className='py-3 font-semibold text-foreground'>Return Reason</TableHead>
                 <TableHead className='py-3 font-semibold text-foreground text-center'>Return Status</TableHead>
                 <TableHead className='py-3 font-semibold text-foreground text-right'>Refund Amount</TableHead>
-                <TableHead className='py-3 font-semibold text-foreground text-center'>Refund Status</TableHead>
-                <TableHead className='py-3 font-semibold text-foreground'>Requested Date</TableHead>
+                <TableHead className='py-3 font-semibold text-foreground'>Submitted Date</TableHead>
                 <TableHead className='py-3 pr-5 font-semibold text-foreground text-right'>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className='text-xs divide-y divide-border/50'>
               {displayedReturns.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={11} className='h-36 text-center text-muted-foreground'>
+                  <TableCell colSpan={10} className='h-36 text-center text-muted-foreground'>
                     No return records found matching criteria.
                   </TableCell>
                 </TableRow>
               ) : (
                 displayedReturns.map(item => (
-                  <TableRow key={item.id} className='hover:bg-muted/20 h-[56px] transition-colors'>
+                  <TableRow
+                    key={item.id}
+                    role='link'
+                    tabIndex={0}
+                    aria-label={`View return ${item.id}`}
+                    onClick={event => handleClickableRow(event, () => router.push(`/returns-refunds/${item.id}`))}
+                    onKeyDown={event => handleClickableRowKeyDown(event, () => router.push(`/returns-refunds/${item.id}`))}
+                    className='hover:bg-muted/20 h-[56px] transition-colors cursor-pointer'
+                  >
                     {/* Return ID Link */}
                     <TableCell className='py-2.5 pl-5 font-mono font-bold text-primary'>
                       <Link href={`/returns-refunds/${item.id}`} className='hover:underline'>
@@ -550,10 +534,10 @@ export default function ReturnsRefundsPage() {
                       <span className='font-mono text-[10px] text-muted-foreground'>{item.productSku}</span>
                     </TableCell>
 
-                    {/* Channel */}
+                    {/* Inspection Status */}
                     <TableCell className='py-2.5 text-center'>
-                      <Badge variant='outline' className='text-[10px] px-1.5 py-0'>
-                        {item.channel}
+                      <Badge variant='outline' className='text-[10px] px-1.5 py-0 whitespace-nowrap'>
+                        {item.inspection?.status ?? 'Not Started'}
                       </Badge>
                     </TableCell>
 
@@ -569,12 +553,9 @@ export default function ReturnsRefundsPage() {
 
                     {/* Refund Amount */}
                     <TableCell className='py-2.5 text-right font-mono font-bold text-foreground'>
-                      SAR {item.refundAmountSAR.toLocaleString()}
-                    </TableCell>
-
-                    {/* Refund Status */}
-                    <TableCell className='py-2.5 text-center'>
-                      {getRefundStatusBadge(item.refundStatus)}
+                      {item.refundStatus === 'Not Started' || item.refundStatus === 'Awaiting Inspection'
+                        ? '—'
+                        : `SAR ${item.refundAmountSAR.toLocaleString()}`}
                     </TableCell>
 
                     {/* Requested Date */}
@@ -585,41 +566,13 @@ export default function ReturnsRefundsPage() {
                     {/* Actions Menu */}
                     <TableCell className='py-2.5 pr-5 text-right'>
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant='ghost' size='sm' className='h-8 w-8 p-0 text-muted-foreground hover:text-foreground'>
-                            <MoreHorizontal className='size-4' />
-                          </Button>
+                        <DropdownMenuTrigger className='inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground'>
+                          <MoreHorizontal className='size-4' />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align='end' className='w-44 text-xs rounded-xl shadow-md'>
                           <DropdownMenuLabel className='text-[11px] text-muted-foreground'>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/returns-refunds/${item.id}`} className='flex items-center gap-2 cursor-pointer'>
-                              <Eye className='size-3.5' /> View Return
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleUpdateStatus(item.id, 'Approved')}
-                            className='flex items-center gap-2 cursor-pointer text-emerald-600'
-                          >
-                            <Check className='size-3.5' /> Approve
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleUpdateStatus(item.id, 'Item Received')}
-                            className='flex items-center gap-2 cursor-pointer text-sky-600'
-                          >
-                            <PackageCheck className='size-3.5' /> Mark Item Received
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleUpdateStatus(item.id, 'Completed', 'Refunded')}
-                            className='flex items-center gap-2 cursor-pointer text-primary font-medium'
-                          >
-                            <CreditCard className='size-3.5' /> Process Refund
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleUpdateStatus(item.id, 'Rejected')}
-                            className='flex items-center gap-2 cursor-pointer text-rose-600'
-                          >
-                            <X className='size-3.5' /> Reject
+                          <DropdownMenuItem onClick={() => router.push(`/returns-refunds/${item.id}`)} className='flex items-center gap-2 cursor-pointer'>
+                            <Eye className='size-3.5' /> View Return
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -730,7 +683,7 @@ export default function ReturnsRefundsPage() {
               Create Return Request
             </DialogTitle>
             <DialogDescription className='text-xs text-muted-foreground'>
-              Initiate an official product return or order cancellation ticket for inspection.
+              Initiate a standard return for eligible catalogue jewellery. Custom jewellery issues require manual exception handling.
             </DialogDescription>
           </DialogHeader>
 

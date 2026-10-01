@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Warehouse,
   Search,
@@ -55,6 +56,7 @@ import {
   TableRow
 } from '@/components/ui/table'
 import { toast } from 'sonner'
+import { handleClickableRow, handleClickableRowKeyDown } from '@/lib/clickable-row'
 
 export interface InventoryItem {
   id: string
@@ -71,7 +73,7 @@ export interface InventoryItem {
   updatedAt: string
 }
 
-const initialInventoryData: InventoryItem[] = [
+export const initialInventoryData: InventoryItem[] = [
   {
     id: 'inv-1',
     name: '100g 999.9 Fine Gold Cast Bar',
@@ -159,6 +161,7 @@ const initialInventoryData: InventoryItem[] = [
 ]
 
 export default function InventoryPage() {
+  const router = useRouter()
   const [items, setItems] = useState<InventoryItem[]>(initialInventoryData)
   const [searchQuery, setSearchQuery] = useState('')
   const [channelFilter, setChannelFilter] = useState('All')
@@ -427,7 +430,12 @@ export default function InventoryPage() {
                 displayedItems.map(item => (
                   <TableRow
                     key={item.id}
-                    className="hover:bg-muted/20 border-b border-border/50 h-[58px] transition-colors"
+                    role="link"
+                    tabIndex={0}
+                    aria-label={`View inventory details for ${item.name}`}
+                    onClick={event => handleClickableRow(event, () => router.push(`/inventory/${item.id}`))}
+                    onKeyDown={event => handleClickableRowKeyDown(event, () => router.push(`/inventory/${item.id}`))}
+                    className="hover:bg-muted/20 border-b border-border/50 h-[58px] transition-colors cursor-pointer"
                   >
                     <TableCell className="py-2.5 pl-5">
                       <div className="font-medium text-sm text-foreground truncate max-w-[220px]">

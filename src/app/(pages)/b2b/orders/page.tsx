@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Search,
   Filter,
@@ -61,6 +62,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { handleClickableRow, handleClickableRowKeyDown } from '@/lib/clickable-row'
 import { toast } from 'sonner'
 import { initialB2BOrders, type B2BOrder } from '@/data/venvision-data'
 import { cn } from '@/lib/utils'
@@ -68,6 +70,7 @@ import { cn } from '@/lib/utils'
 type TabFilter = 'all' | 'fixed' | 'negotiation' | 'pending' | 'completed' | 'cancelled'
 
 export default function B2BOrdersPage() {
+  const router = useRouter()
   const [orders, setOrders] = useState<B2BOrder[]>(initialB2BOrders)
   const [activeTab, setActiveTab] = useState<TabFilter>('all')
   const [searchQuery, setSearchQuery] = useState('')
@@ -513,7 +516,12 @@ export default function B2BOrdersPage() {
                   return (
                     <TableRow
                       key={order.id}
-                      className="hover:bg-muted/20 border-b border-border/50 h-[64px] transition-colors"
+                      role="link"
+                      tabIndex={0}
+                      aria-label={`View order ${order.orderNumber}`}
+                      onClick={event => handleClickableRow(event, () => router.push(`/b2b/orders/${order.id}`))}
+                      onKeyDown={event => handleClickableRowKeyDown(event, () => router.push(`/b2b/orders/${order.id}`))}
+                      className="hover:bg-muted/20 border-b border-border/50 h-[64px] transition-colors cursor-pointer"
                     >
                       {/* 1. Order ID */}
                       <TableCell className="py-2.5 pl-5">

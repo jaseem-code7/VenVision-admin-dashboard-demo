@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Table2,
   Filter,
@@ -43,6 +44,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
+import { handleClickableRow, handleClickableRowKeyDown } from '@/lib/clickable-row'
 
 export interface B2CProduct {
   id: string
@@ -59,7 +61,7 @@ export interface B2CProduct {
   image: string
 }
 
-const sampleB2CProducts: B2CProduct[] = [
+export const sampleB2CProducts: B2CProduct[] = [
   {
     id: 'b2c-1',
     name: 'Royale Solitaire Diamond Ring',
@@ -203,6 +205,7 @@ const sampleB2CProducts: B2CProduct[] = [
 ]
 
 export default function B2CProductsPage() {
+  const router = useRouter()
   const [products, setProducts] = useState<B2CProduct[]>(sampleB2CProducts)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [showStatistics, setShowStatistics] = useState(true)
@@ -602,10 +605,15 @@ export default function B2CProductsPage() {
                   return (
                     <tr
                       key={p.id}
+                      role='link'
+                      tabIndex={0}
+                      aria-label={`View ${p.name}`}
+                      onClick={event => handleClickableRow(event, () => router.push(`/b2c/products/${p.id}`))}
+                      onKeyDown={event => handleClickableRowKeyDown(event, () => router.push(`/b2c/products/${p.id}`))}
                       className={`group transition-colors h-[50px] ${
                         isSelected
-                          ? 'bg-primary/5 hover:bg-primary/10'
-                          : 'hover:bg-muted/40'
+                          ? 'bg-primary/5 hover:bg-primary/10 cursor-pointer'
+                          : 'hover:bg-muted/40 cursor-pointer'
                       }`}
                     >
                       {/* Checkbox */}
@@ -718,7 +726,7 @@ export default function B2CProductsPage() {
                             <MoreVertical className='size-3.5' />
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align='end' className='w-36 text-xs'>
-                            <DropdownMenuItem onClick={() => toast.info(`Viewing details for ${p.name}`)} className='gap-2'>
+                            <DropdownMenuItem onClick={() => router.push(`/b2c/products/${p.id}`)} className='gap-2'>
                               <Eye className='size-3.5' /> View Details
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => toast.info(`Editing ${p.name}`)} className='gap-2'>

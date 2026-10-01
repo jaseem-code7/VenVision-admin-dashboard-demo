@@ -1,16 +1,25 @@
 export type ReturnStatus =
-  | 'Requested'
+  | 'Return Requested'
   | 'Under Review'
-  | 'Approved'
-  | 'Rejected'
-  | 'Item Received'
-  | 'Completed'
+  | 'Return Approved'
+  | 'Awaiting Product'
+  | 'Product Received'
+  | 'Quality Inspection'
+  | 'Refund Approved'
+  | 'Partial Refund Approved'
+  | 'Refund Rejected'
+  | 'Refund Processing'
+  | 'Refund Completed'
+  | 'Return Closed'
 
 export type RefundStatus =
   | 'Not Started'
-  | 'Pending'
+  | 'Awaiting Inspection'
+  | 'Approved'
+  | 'Partial Approved'
+  | 'Rejected'
   | 'Processing'
-  | 'Refunded'
+  | 'Completed'
   | 'Failed'
 
 export type ReturnReason =
@@ -21,6 +30,71 @@ export type ReturnReason =
   | 'Order Cancellation'
   | 'Quality Issue'
   | 'Other'
+
+export type InspectionResult = 'Pass' | 'Fail' | 'Not Applicable'
+
+export type InspectionStatus = 'Not Started' | 'Pending' | 'In Progress' | 'Passed' | 'Failed'
+
+export type InspectionCheckKey =
+  | 'correctProduct'
+  | 'productCondition'
+  | 'scratchesDamage'
+  | 'missingStones'
+  | 'stoneCondition'
+  | 'metalCondition'
+  | 'certificateIncluded'
+  | 'packagingIncluded'
+  | 'accessoriesIncluded'
+  | 'resizingSigns'
+  | 'engravingSigns'
+  | 'modificationSigns'
+  | 'usageSigns'
+  | 'serialSkuMatch'
+
+export const INSPECTION_CHECKS: { key: InspectionCheckKey; label: string }[] = [
+  { key: 'correctProduct', label: 'Correct returned product' },
+  { key: 'productCondition', label: 'Product condition' },
+  { key: 'scratchesDamage', label: 'Scratches / damage' },
+  { key: 'missingStones', label: 'Missing stones' },
+  { key: 'stoneCondition', label: 'Stone condition' },
+  { key: 'metalCondition', label: 'Gold / metal condition' },
+  { key: 'certificateIncluded', label: 'Certificate included' },
+  { key: 'packagingIncluded', label: 'Packaging included' },
+  { key: 'accessoriesIncluded', label: 'Accessories included' },
+  { key: 'resizingSigns', label: 'Signs of resizing' },
+  { key: 'engravingSigns', label: 'Signs of engraving' },
+  { key: 'modificationSigns', label: 'Signs of modification' },
+  { key: 'usageSigns', label: 'Signs of usage' },
+  { key: 'serialSkuMatch', label: 'Serial / SKU match' }
+]
+
+export type ReturnInspection = {
+  status: InspectionStatus
+  checklist: Record<InspectionCheckKey, InspectionResult>
+  inspectorNotes: string
+  inspectorName?: string
+  inspectedDate?: string
+}
+
+export type RefundDecision = {
+  type: 'None' | 'Full' | 'Partial' | 'Rejected'
+  originalPaidAmountSAR: number
+  deductionAmountSAR: number
+  deductionReason?: string
+  finalRefundAmountSAR: number
+  rejectionReason?: string
+  decidedDate?: string
+}
+
+export type MoyasarRefund = {
+  paymentId: string
+  refundId?: string
+  refundAmountSAR?: number
+  requestedDate?: string
+  processedDate?: string
+  status: 'Not Started' | 'Processing' | 'Completed' | 'Failed'
+  apiReference?: string
+}
 
 export type ReturnItem = {
   id: string
@@ -47,6 +121,13 @@ export type ReturnItem = {
   originalPaymentMethod: string
   courierUsed: string
   trackingNumber: string
+  receivedDate?: string
+  receivedBy?: string
+  evidencePhotos?: string[]
+  inspection?: ReturnInspection
+  refundDecision?: RefundDecision
+  moyasarRefund?: MoyasarRefund
+
   // B2B specific inspection attributes
   b2bDetails?: {
     weightGrams: number
@@ -82,8 +163,8 @@ export const MOCK_RETURNS: ReturnItem[] = [
     restockingFeeSAR: 0,
     refundAmountSAR: 2465, // 2490 + 0 - 25 - 0 = 2465
     returnReason: 'Wrong Size',
-    returnStatus: 'Requested',
-    refundStatus: 'Pending',
+    returnStatus: 'Return Requested',
+    refundStatus: 'Not Started',
     requestedDate: '25 Sep 2026',
     customerNotes: 'The ring size is European 52 but my fiancée wears size 56. The ring is completely unworn with original tamper tag intact.',
     originalPaymentMethod: 'Mada Debit Card (Moyasar)',
@@ -115,8 +196,8 @@ export const MOCK_RETURNS: ReturnItem[] = [
     restockingFeeSAR: 0,
     refundAmountSAR: 27150,
     returnReason: 'Order Cancellation',
-    returnStatus: 'Approved',
-    refundStatus: 'Processing',
+    returnStatus: 'Quality Inspection',
+    refundStatus: 'Awaiting Inspection',
     requestedDate: '24 Sep 2026',
     customerNotes: 'Client project cancelled prior to vault physical dispatch. Security seals remain verified in vault depot.',
     originalPaymentMethod: 'Direct Bank Wire (Riyad Bank)',
@@ -156,7 +237,7 @@ export const MOCK_RETURNS: ReturnItem[] = [
     refundAmountSAR: 14200,
     returnReason: 'Changed Mind',
     returnStatus: 'Under Review',
-    refundStatus: 'Pending',
+    refundStatus: 'Not Started',
     requestedDate: '23 Sep 2026',
     customerNotes: 'Client opted for the royal sapphire edition instead. Requesting full refund to repurchase.',
     originalPaymentMethod: 'Visa / Mastercard (Moyasar)',
@@ -187,8 +268,8 @@ export const MOCK_RETURNS: ReturnItem[] = [
     restockingFeeSAR: 0,
     refundAmountSAR: 5600,
     returnReason: 'Damaged Product',
-    returnStatus: 'Item Received',
-    refundStatus: 'Processing',
+    returnStatus: 'Quality Inspection',
+    refundStatus: 'Awaiting Inspection',
     requestedDate: '22 Sep 2026',
     customerNotes: 'Minor hinge defect noticed upon unboxing. Master craftsman inspection confirmed hinge pin looseness.',
     originalPaymentMethod: 'Apple Pay (Mada)',
@@ -220,8 +301,8 @@ export const MOCK_RETURNS: ReturnItem[] = [
     restockingFeeSAR: 0,
     refundAmountSAR: 135800,
     returnReason: 'Quality Issue',
-    returnStatus: 'Completed',
-    refundStatus: 'Refunded',
+    returnStatus: 'Refund Completed',
+    refundStatus: 'Completed',
     requestedDate: '18 Sep 2026',
     customerNotes: 'Discrepancy in assay certificate serial numbering vs physical laser barcode. Replacement unit issued and financial reconciliation finalized.',
     originalPaymentMethod: 'RTGS Central Bank Transfer',
@@ -259,9 +340,9 @@ export const MOCK_RETURNS: ReturnItem[] = [
     venvisionReturnExpenseSAR: 22,
     restockingFeeSAR: 380, // 10% personalized engraving restocking fee
     refundAmountSAR: 3420,
-    returnReason: 'Rejected',
-    returnStatus: 'Rejected',
-    refundStatus: 'Not Started',
+    returnReason: 'Other',
+    returnStatus: 'Return Closed',
+    refundStatus: 'Rejected',
     requestedDate: '16 Sep 2026',
     customerNotes: 'Custom engraved initials requested on back plate. Bespoke personalized items are non-returnable under VenVision terms.',
     originalPaymentMethod: 'Mada Debit Card',
@@ -276,3 +357,69 @@ export const MOCK_RETURNS: ReturnItem[] = [
     ]
   }
 ]
+
+const createInspectionChecklist = (): Record<InspectionCheckKey, InspectionResult> =>
+  Object.fromEntries(INSPECTION_CHECKS.map(item => [item.key, 'Not Applicable'])) as Record<
+    InspectionCheckKey,
+    InspectionResult
+  >
+
+const getInitialInspectionStatus = (item: ReturnItem): InspectionStatus => {
+  if (item.returnStatus === 'Refund Completed') return 'Passed'
+  if (item.returnStatus === 'Quality Inspection') return 'In Progress'
+  if (item.returnStatus === 'Product Received') return 'Pending'
+
+  return 'Not Started'
+}
+
+export const normalizeReturnItem = (item: ReturnItem): ReturnItem => {
+  const inspection = item.inspection ?? {
+    status: getInitialInspectionStatus(item),
+    checklist: createInspectionChecklist(),
+    inspectorNotes: ''
+  }
+
+  const refundDecision = item.refundDecision ?? {
+    type: item.refundStatus === 'Completed' ? 'Full' : item.refundStatus === 'Rejected' ? 'Rejected' : 'None',
+    originalPaidAmountSAR: item.originalProductPriceSAR,
+    deductionAmountSAR: Math.max(0, item.originalProductPriceSAR - item.refundAmountSAR),
+    finalRefundAmountSAR: item.refundAmountSAR
+  }
+
+  const moyasarRefund = item.moyasarRefund ?? {
+    paymentId: `PAY-${item.orderId}`,
+    refundId: item.refundStatus === 'Completed' ? `RFN-${item.id}` : undefined,
+    refundAmountSAR: item.refundStatus === 'Completed' ? item.refundAmountSAR : undefined,
+    status: item.refundStatus === 'Completed' ? 'Completed' : 'Not Started'
+  }
+
+  return {
+    ...item,
+    evidencePhotos: item.evidencePhotos ?? [item.productImage],
+    inspection,
+    refundDecision,
+    moyasarRefund
+  }
+}
+
+const getReturnStorageKey = (returnId: string) => `venvision-return-workflow:${returnId}`
+
+export const loadReturnItem = (item: ReturnItem): ReturnItem => {
+  const fallback = normalizeReturnItem(item)
+
+  if (typeof window === 'undefined') return fallback
+
+  try {
+    const stored = window.localStorage.getItem(getReturnStorageKey(item.id))
+
+    return stored ? normalizeReturnItem({ ...fallback, ...JSON.parse(stored) }) : fallback
+  } catch {
+    return fallback
+  }
+}
+
+export const saveReturnItem = (item: ReturnItem) => {
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem(getReturnStorageKey(item.id), JSON.stringify(item))
+  }
+}

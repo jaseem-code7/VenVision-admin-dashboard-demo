@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Search,
   Filter,
@@ -49,8 +50,10 @@ import {
 } from '@/components/ui/table'
 import { toast } from 'sonner'
 import { initialB2COrders, type B2COrder } from '@/data/venvision-data'
+import { handleClickableRow, handleClickableRowKeyDown } from '@/lib/clickable-row'
 
 export default function B2COrdersPage() {
+  const router = useRouter()
   const [orders, setOrders] = useState<B2COrder[]>(initialB2COrders)
   const [searchQuery, setSearchQuery] = useState('')
   const [orderStatusFilter, setOrderStatusFilter] = useState('All')
@@ -284,7 +287,12 @@ export default function B2COrdersPage() {
                 displayedOrders.map(order => (
                   <TableRow
                     key={order.id}
-                    className="hover:bg-muted/20 border-b border-border/50 h-[58px] transition-colors"
+                    role="link"
+                    tabIndex={0}
+                    aria-label={`View order ${order.orderNumber}`}
+                    onClick={event => handleClickableRow(event, () => router.push(`/b2c/orders/${order.id}`))}
+                    onKeyDown={event => handleClickableRowKeyDown(event, () => router.push(`/b2c/orders/${order.id}`))}
+                    className="hover:bg-muted/20 border-b border-border/50 h-[58px] transition-colors cursor-pointer"
                   >
                     {/* Order ID */}
                     <TableCell className="py-2.5 pl-5">

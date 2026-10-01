@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
+import { handleClickableRow, handleClickableRowKeyDown } from '@/lib/clickable-row'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -433,7 +434,12 @@ export default function CategoriesPage() {
                 filteredCategories.map(cat => (
                   <tr
                     key={cat.id}
-                    className='group hover:bg-muted/30 transition-colors'
+                    role='button'
+                    tabIndex={0}
+                    aria-label={`Edit category ${cat.name}`}
+                    onClick={event => handleClickableRow(event, () => handleOpenEdit(cat))}
+                    onKeyDown={event => handleClickableRowKeyDown(event, () => handleOpenEdit(cat))}
+                    className='group hover:bg-muted/30 transition-colors cursor-pointer'
                   >
                     {/* Category Title + Arabic */}
                     <td className='py-3.5 px-4'>

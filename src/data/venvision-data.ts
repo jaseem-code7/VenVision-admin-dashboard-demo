@@ -25,8 +25,6 @@ export interface B2CProduct {
   stock: number
   sizes: string[]
   gender?: 'Women' | 'Men' | 'Unisex'
-  has3DViewer: boolean
-  model3DUrl?: string
   images: string[]
   certificate: string
   isBestSeller?: boolean
@@ -74,6 +72,8 @@ export interface B2COrder {
   shippingAddress: string
   courier: string
   trackingNumber: string
+  orderType?: 'Catalogue Jewellery' | 'Custom Jewellery'
+  customRequestId?: string
   items: {
     productName: string
     sku: string
@@ -294,8 +294,6 @@ export const initialB2CProducts: B2CProduct[] = [
     stock: 12,
     sizes: ['52 (US 6)', '54 (US 7)', '56 (US 7.5)'],
     gender: 'Women',
-    has3DViewer: true,
-    model3DUrl: '/models/solitaire-ring.glb',
     images: ['https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=800&auto=format&fit=crop&q=80'],
     certificate: 'GIA-6482910482',
     isBestSeller: true,
@@ -328,8 +326,6 @@ export const initialB2CProducts: B2CProduct[] = [
     stock: 7,
     sizes: ['40cm Adjustable'],
     gender: 'Women',
-    has3DViewer: true,
-    model3DUrl: '/models/najdi-necklace.glb',
     images: ['https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&auto=format&fit=crop&q=80'],
     certificate: 'Saudi Assay Hallmark 21K',
     isBestSeller: true,
@@ -358,7 +354,6 @@ export const initialB2CProducts: B2CProduct[] = [
     stock: 5,
     sizes: ['17 cm', '18 cm'],
     gender: 'Women',
-    has3DViewer: false,
     images: ['https://images.unsplash.com/photo-1611591475155-4284ec28d351?w=800&auto=format&fit=crop&q=80'],
     certificate: 'IGI Certified Diamond & Gemstone',
     isBestSeller: false,
@@ -390,8 +385,6 @@ export const initialB2CProducts: B2CProduct[] = [
     stock: 18,
     sizes: ['One Size (Drop 35mm)'],
     gender: 'Women',
-    has3DViewer: true,
-    model3DUrl: '/models/diamond-earrings.glb',
     images: ['https://images.unsplash.com/photo-1630019852942-f89202989a59?w=800&auto=format&fit=crop&q=80'],
     certificate: 'IGI Jewelry Report',
     isBestSeller: true,
@@ -420,7 +413,6 @@ export const initialB2CProducts: B2CProduct[] = [
     stock: 3,
     sizes: ['Custom Bridal Fit'],
     gender: 'Women',
-    has3DViewer: true,
     images: ['https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&auto=format&fit=crop&q=80'],
     certificate: 'Saudi Assay Office Certified',
     isBestSeller: false,
@@ -453,8 +445,6 @@ export const initialB2CProducts: B2CProduct[] = [
     stock: 9,
     sizes: ['60 (US 9)', '62 (US 10)', '64 (US 11)'],
     gender: 'Men',
-    has3DViewer: true,
-    model3DUrl: '/models/mens-signet.glb',
     images: ['https://images.unsplash.com/photo-1603561591411-07134e71a2a9?w=800&auto=format&fit=crop&q=80'],
     certificate: 'Saudi Assay Hallmark 21K',
     isBestSeller: true,
@@ -487,7 +477,6 @@ export const initialB2CProducts: B2CProduct[] = [
     stock: 14,
     sizes: ['Standard Fit'],
     gender: 'Men',
-    has3DViewer: false,
     images: ['https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=800&auto=format&fit=crop&q=80'],
     certificate: 'Swiss Assay 750 / Saudi Assay Certified',
     isBestSeller: false,
@@ -599,6 +588,8 @@ export const initialB2COrders: B2COrder[] = [
     shippingAddress: 'Al-Nakheel District, Riyadh 12381, KSA',
     courier: 'SMSA Express',
     trackingNumber: 'SMSA-99210482',
+    orderType: 'Custom Jewellery',
+    customRequestId: 'REQ-7094',
     items: [
       {
         productName: 'Royale Solitaire Diamond Ring 1.2ct',

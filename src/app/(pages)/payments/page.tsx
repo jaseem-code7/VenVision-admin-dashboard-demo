@@ -37,6 +37,7 @@ import {
   SheetDescription
 } from '@/components/ui/sheet'
 import { toast } from 'sonner'
+import { handleClickableRow, handleClickableRowKeyDown } from '@/lib/clickable-row'
 
 interface PaymentTransaction {
   id: string
@@ -465,7 +466,11 @@ export default function PaymentsPage() {
                 filteredTransactions.map(txn => (
                   <tr
                     key={txn.id}
-                    onClick={() => handleOpenDrawer(txn)}
+                    role='button'
+                    tabIndex={0}
+                    aria-label={`View payment ${txn.id}`}
+                    onClick={event => handleClickableRow(event, () => handleOpenDrawer(txn))}
+                    onKeyDown={event => handleClickableRowKeyDown(event, () => handleOpenDrawer(txn))}
                     className='group hover:bg-muted/30 transition-colors cursor-pointer'
                   >
                     {/* Transaction ID */}

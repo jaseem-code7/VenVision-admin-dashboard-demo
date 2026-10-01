@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Search,
   Building2,
@@ -46,6 +47,7 @@ import {
 } from '@/components/ui/table'
 import { toast } from 'sonner'
 import { initialB2BBuyers, type B2BBuyer } from '@/data/venvision-data'
+import { handleClickableRow, handleClickableRowKeyDown } from '@/lib/clickable-row'
 
 export interface B2BCustomerWithOutstanding extends B2BBuyer {
   outstandingSAR: number
@@ -59,6 +61,7 @@ const initialB2BCustomers: B2BCustomerWithOutstanding[] = initialB2BBuyers.map((
 }))
 
 export default function B2BCustomersPage() {
+  const router = useRouter()
   const [customers, setCustomers] = useState<B2BCustomerWithOutstanding[]>(initialB2BCustomers)
   const [searchQuery, setSearchQuery] = useState('')
   const [tierFilter, setTierFilter] = useState('All')
@@ -237,7 +240,12 @@ export default function B2BCustomersPage() {
                 displayedCustomers.map(c => (
                   <TableRow
                     key={c.id}
-                    className="hover:bg-muted/20 border-b border-border/50 h-[58px] transition-colors"
+                    role="link"
+                    tabIndex={0}
+                    aria-label={`View business account ${c.companyName}`}
+                    onClick={event => handleClickableRow(event, () => router.push(`/b2b/customers/${c.id}`))}
+                    onKeyDown={event => handleClickableRowKeyDown(event, () => router.push(`/b2b/customers/${c.id}`))}
+                    className="hover:bg-muted/20 border-b border-border/50 h-[58px] transition-colors cursor-pointer"
                   >
                     {/* Business / Buyer */}
                     <TableCell className="py-2.5 pl-5">

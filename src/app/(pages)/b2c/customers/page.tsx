@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Search,
   Users,
@@ -45,8 +46,10 @@ import {
 } from '@/components/ui/table'
 import { toast } from 'sonner'
 import { initialB2CCustomers, type B2CCustomer } from '@/data/venvision-data'
+import { handleClickableRow, handleClickableRowKeyDown } from '@/lib/clickable-row'
 
 export default function B2CCustomersPage() {
+  const router = useRouter()
   const [customers, setCustomers] = useState<B2CCustomer[]>(initialB2CCustomers)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
@@ -229,7 +232,12 @@ export default function B2CCustomersPage() {
                 displayedCustomers.map(c => (
                   <TableRow
                     key={c.id}
-                    className="hover:bg-muted/20 border-b border-border/50 h-[58px] transition-colors"
+                    role="link"
+                    tabIndex={0}
+                    aria-label={`View customer ${c.name}`}
+                    onClick={event => handleClickableRow(event, () => router.push(`/b2c/customers/${c.id}`))}
+                    onKeyDown={event => handleClickableRowKeyDown(event, () => router.push(`/b2c/customers/${c.id}`))}
+                    className="hover:bg-muted/20 border-b border-border/50 h-[58px] transition-colors cursor-pointer"
                   >
                     {/* Customer */}
                     <TableCell className="py-2.5 pl-5">

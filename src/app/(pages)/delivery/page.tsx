@@ -44,6 +44,7 @@ import {
   MoveDown
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { handleClickableRow, handleClickableRowKeyDown } from '@/lib/clickable-row'
 import {
   BarChart,
   Bar,
@@ -1376,7 +1377,15 @@ export default function DeliveryShippingPage() {
                     </TableRow>
                   ) : (
                     displayedShipments.map(s => (
-                      <TableRow key={s.id} className='hover:bg-muted/20 border-b border-border/50 h-[56px] transition-colors'>
+                      <TableRow
+                        key={s.id}
+                        role='button'
+                        tabIndex={0}
+                        aria-label={`View shipment ${s.trackingNumber}`}
+                        onClick={event => handleClickableRow(event, () => setManifestShipment(s))}
+                        onKeyDown={event => handleClickableRowKeyDown(event, () => setManifestShipment(s))}
+                        className='hover:bg-muted/20 border-b border-border/50 h-[56px] transition-colors cursor-pointer'
+                      >
                         {/* Order */}
                         <TableCell className='py-2.5 pl-5 font-mono text-xs font-bold text-primary'>
                           <Link href={s.channel === 'B2B' ? '/b2b/orders' : '/b2c/orders'} className='hover:underline'>
