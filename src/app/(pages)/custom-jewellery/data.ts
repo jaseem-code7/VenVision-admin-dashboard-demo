@@ -112,7 +112,7 @@ export const REJECTED_CUSTOM_STATUSES: CustomRequestStatus[] = [
   'Cancelled'
 ]
 
-const getWorkflowStorageKey = (requestId: string) => `venvision-custom-workflow:${requestId}`
+const getWorkflowStorageKey = (requestId: string) => `venvision-custom-workflow:v2:${requestId}`
 
 const getInitialHistory = (request: CustomJewelleryRequest): StatusHistoryEntry[] => {
   if (request.history?.length) return request.history
@@ -838,9 +838,10 @@ export const MOCK_CUSTOM_REQUESTS: CustomJewelleryRequest[] = [
     }
   },
 
-  // 20. REQ-7110: Full Custom Design (Completed)
+  // Archived demo history (kept separate from the persistent pending request IDs below).
+  // 20. REQ-7010: Full Custom Design (Completed)
   {
-    id: 'REQ-7110',
+    id: 'REQ-7010',
     type: 'Full Custom Design',
     customerName: 'Samira Al-Zahrani',
     customerEmail: 'samira.z@corp.sa',
@@ -872,9 +873,9 @@ export const MOCK_CUSTOM_REQUESTS: CustomJewelleryRequest[] = [
     }
   },
 
-  // 21. REQ-7111: Product Customization (Completed)
+  // 21. REQ-7011: Product Customization (Completed)
   {
-    id: 'REQ-7111',
+    id: 'REQ-7011',
     type: 'Product Customization',
     customerName: 'Tariq Al-Nemer',
     customerEmail: 'tariq.nemer@nemer.sa',
@@ -905,9 +906,9 @@ export const MOCK_CUSTOM_REQUESTS: CustomJewelleryRequest[] = [
     }
   },
 
-  // 22. REQ-7112: Product Customization (Completed)
+  // 22. REQ-7012: Product Customization (Completed)
   {
-    id: 'REQ-7112',
+    id: 'REQ-7012',
     type: 'Product Customization',
     customerName: 'Ghada Al-Tuwaijri',
     customerEmail: 'ghada.t@edu.sa',
@@ -937,9 +938,9 @@ export const MOCK_CUSTOM_REQUESTS: CustomJewelleryRequest[] = [
     }
   },
 
-  // 23. REQ-7113: Product Customization (Completed)
+  // 23. REQ-7013: Product Customization (Completed)
   {
-    id: 'REQ-7113',
+    id: 'REQ-7013',
     type: 'Product Customization',
     customerName: 'Nasser Al-Ajmi',
     customerEmail: 'nasser.ajmi@oil.sa',
@@ -970,9 +971,9 @@ export const MOCK_CUSTOM_REQUESTS: CustomJewelleryRequest[] = [
     }
   },
 
-  // 24. REQ-7114: Full Custom Design (Completed)
+  // 24. REQ-7014: Full Custom Design (Completed)
   {
-    id: 'REQ-7114',
+    id: 'REQ-7014',
     type: 'Full Custom Design',
     customerName: 'Hind Al-Otaibi',
     customerEmail: 'hind.o@gmail.com',
@@ -1002,9 +1003,9 @@ export const MOCK_CUSTOM_REQUESTS: CustomJewelleryRequest[] = [
     }
   },
 
-  // 25. REQ-7115: Product Customization (Completed)
+  // 25. REQ-7015: Product Customization (Completed)
   {
-    id: 'REQ-7115',
+    id: 'REQ-7015',
     type: 'Product Customization',
     customerName: 'Ibrahim Al-Bader',
     customerEmail: 'ibrahim.bader@bank.sa',
@@ -1034,9 +1035,9 @@ export const MOCK_CUSTOM_REQUESTS: CustomJewelleryRequest[] = [
     }
   },
 
-  // 26. REQ-7116: Product Customization (Rejected)
+  // 26. REQ-7016: Product Customization (Rejected)
   {
-    id: 'REQ-7116',
+    id: 'REQ-7016',
     type: 'Product Customization',
     customerName: 'Mishal Al-Ghamdi',
     customerEmail: 'mishal.g@yahoo.com',
@@ -1065,9 +1066,9 @@ export const MOCK_CUSTOM_REQUESTS: CustomJewelleryRequest[] = [
     }
   },
 
-  // 27. REQ-7117: Full Custom Design (Rejected)
+  // 27. REQ-7017: Full Custom Design (Rejected)
   {
-    id: 'REQ-7117',
+    id: 'REQ-7017',
     type: 'Full Custom Design',
     customerName: 'Bader Al-Mutairi',
     customerEmail: 'bader.m@corp.sa',
@@ -1095,9 +1096,9 @@ export const MOCK_CUSTOM_REQUESTS: CustomJewelleryRequest[] = [
     }
   },
 
-  // 28. REQ-7118: Full Custom Design (Rejected)
+  // 28. REQ-7018: Full Custom Design (Rejected)
   {
-    id: 'REQ-7118',
+    id: 'REQ-7018',
     type: 'Full Custom Design',
     customerName: 'Yasmeen Al-Omari',
     customerEmail: 'yasmeen.o@outlook.com',
@@ -1122,6 +1123,456 @@ export const MOCK_CUSTOM_REQUESTS: CustomJewelleryRequest[] = [
     },
     quotation: {
       finalQuote: 0
+    }
+  },
+
+  // Persistent demo/mock pending requests. These records intentionally live in the static data source.
+  // 29. REQ-7110: Product Customization (New)
+  {
+    id: 'REQ-7110',
+    type: 'Product Customization',
+    customerName: 'Huda Al-Salem',
+    customerEmail: 'huda.alsalem@example.com',
+    customerPhone: '+966 50 711 1001',
+    jewellery: 'Diamond Halo Ring',
+    requestDetails: 'Change to 21K yellow gold, resize to ring size 7, and engrave “H&S”.',
+    referenceImages: [
+      'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=800&auto=format&fit=crop&q=80'
+    ],
+    status: 'New',
+    submittedDate: '01 Oct 2026, 09:10',
+    dateCategory: 'Today',
+    originalProduct: {
+      name: 'Celeste Diamond Halo Ring',
+      sku: 'VV-RNG-2110',
+      image: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=800&auto=format&fit=crop&q=80',
+      originalPrice: 18400,
+      category: 'Rings'
+    },
+    customChanges: {
+      goldKarat: '21K',
+      goldColor: 'Yellow Gold',
+      size: 'Ring size 7',
+      engraving: 'H&S',
+      specialInstructions: 'Keep the existing diamond halo proportions and confirm engraving placement before production.'
+    },
+    customerNotes: 'Anniversary gift required before 20 October.',
+    quotation: {
+      originalPrice: 18400,
+      finalQuote: 0,
+      adminNotes: 'Demo request — awaiting initial atelier review.'
+    }
+  },
+
+  // 30. REQ-7111: Full Custom Design (Under Review)
+  {
+    id: 'REQ-7111',
+    type: 'Full Custom Design',
+    customerName: 'Faisal Al-Qahtani',
+    customerEmail: 'faisal.alqahtani@example.com',
+    customerPhone: '+966 55 711 1002',
+    jewellery: 'Men’s Signet Ring',
+    requestDetails: 'Design a 21K yellow gold signet ring with black onyx and Arabic initials.',
+    referenceImages: [
+      'https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1610375461246-83df859d849d?w=800&auto=format&fit=crop&q=80'
+    ],
+    status: 'Under Review',
+    submittedDate: '30 Sep 2026, 16:25',
+    dateCategory: 'Last 7 Days',
+    fullCustomDesign: {
+      jewelleryType: 'Men’s Signet Ring',
+      materialPreference: '21K Yellow Gold with Black Onyx',
+      customerDescription: 'A substantial rectangular signet ring with a polished black onyx face and engraved Arabic initials.',
+      photos: [
+        'https://images.unsplash.com/photo-1600003014755-ba31aa59c4b6?w=800&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1610375461246-83df859d849d?w=800&auto=format&fit=crop&q=80'
+      ],
+      sizeMeasurements: 'Ring size 11; face approximately 16mm × 13mm',
+      additionalRequirements: 'Matte shoulders, polished bezel, and Arabic initials engraved into the onyx.',
+      customerBudget: 16500
+    },
+    customerNotes: 'Customer is available for a design call after 5 PM.',
+    quotation: {
+      materialsEstimate: 9800,
+      laborEstimate: 3600,
+      finalQuote: 0,
+      adminNotes: 'Demo request — CAD feasibility review in progress.'
+    }
+  },
+
+  // 31. REQ-7112: Product Customization (Awaiting Customer)
+  {
+    id: 'REQ-7112',
+    type: 'Product Customization',
+    customerName: 'Layan Al-Harbi',
+    customerEmail: 'layan.alharbi@example.com',
+    customerPhone: '+966 54 711 1003',
+    jewellery: 'Tennis Bracelet',
+    requestDetails: 'Resize to 16.5cm and change the finish to rose gold.',
+    referenceImages: [
+      'https://images.unsplash.com/photo-1611591475806-2319c117ea8a?w=800&auto=format&fit=crop&q=80'
+    ],
+    status: 'Awaiting Customer',
+    submittedDate: '30 Sep 2026, 11:40',
+    dateCategory: 'Last 7 Days',
+    originalProduct: {
+      name: 'Classic Diamond Tennis Bracelet',
+      sku: 'VV-BRC-2112',
+      image: 'https://images.unsplash.com/photo-1611591475806-2319c117ea8a?w=800&auto=format&fit=crop&q=80',
+      originalPrice: 26900,
+      category: 'Bracelets'
+    },
+    customChanges: {
+      goldKarat: '18K',
+      goldColor: 'Rose Gold',
+      size: '16.5cm',
+      specialInstructions: 'Confirm whether removed links should be returned separately.'
+    },
+    customerNotes: 'Waiting for the customer to confirm wrist measurement and clasp preference.',
+    quotation: {
+      originalPrice: 26900,
+      customizationAdjustment: 1200,
+      finalQuote: 28100,
+      adminNotes: 'Demo request — measurement confirmation requested.'
+    }
+  },
+
+  // 32. REQ-7113: Full Custom Design (New)
+  {
+    id: 'REQ-7113',
+    type: 'Full Custom Design',
+    customerName: 'Mariam Al-Dosari',
+    customerEmail: 'mariam.aldosari@example.com',
+    customerPhone: '+966 56 711 1004',
+    jewellery: 'Bridal Necklace Set',
+    requestDetails: 'Create a 22K bridal necklace with emerald and diamond accents plus matching earrings.',
+    referenceImages: [
+      'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&auto=format&fit=crop&q=80'
+    ],
+    status: 'New',
+    submittedDate: '01 Oct 2026, 08:35',
+    dateCategory: 'Today',
+    fullCustomDesign: {
+      jewelleryType: 'Bridal Necklace and Matching Earrings',
+      materialPreference: '22K Yellow Gold, Emeralds and Diamonds',
+      customerDescription: 'Layered bridal necklace inspired by traditional Saudi motifs with emerald drops and diamond accents.',
+      photos: [
+        'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&auto=format&fit=crop&q=80'
+      ],
+      sizeMeasurements: 'Necklace 42cm with 4cm extension; earrings under 5cm drop',
+      additionalRequirements: 'Matching earrings must use secure screw backs.',
+      customerBudget: 82000
+    },
+    customerNotes: 'Wedding date is in January 2027.',
+    quotation: {
+      finalQuote: 0,
+      adminNotes: 'Demo request — sourcing and design review not started.'
+    }
+  },
+
+  // 33. REQ-7114: Product Customization (Approved)
+  {
+    id: 'REQ-7114',
+    type: 'Product Customization',
+    customerName: 'Ahmed Al-Otaibi',
+    customerEmail: 'ahmed.alotaibi@example.com',
+    customerPhone: '+966 53 711 1005',
+    jewellery: 'Men’s Gold Bracelet',
+    requestDetails: 'Increase the bracelet width, apply a matte finish, and engrave initials.',
+    referenceImages: [
+      'https://images.unsplash.com/photo-1611591475806-2319c117ea8a?w=800&auto=format&fit=crop&q=80'
+    ],
+    status: 'Approved',
+    submittedDate: '29 Sep 2026, 14:15',
+    dateCategory: 'Last 7 Days',
+    originalProduct: {
+      name: 'Heritage Curb Gold Bracelet',
+      sku: 'VV-BRC-2114',
+      image: 'https://images.unsplash.com/photo-1611591475806-2319c117ea8a?w=800&auto=format&fit=crop&q=80',
+      originalPrice: 13200,
+      category: 'Bracelets'
+    },
+    customChanges: {
+      goldKarat: '21K',
+      goldColor: 'Yellow Gold',
+      size: '20cm length; increase link width to 9mm',
+      engraving: 'A.O.',
+      specialInstructions: 'Matte exterior with polished bevels and reinforced clasp.'
+    },
+    customerNotes: 'Approved the wider link sample shown by the concierge.',
+    quotation: {
+      originalPrice: 13200,
+      goldValue: 12100,
+      makingCharge: 1800,
+      customizationCharge: 900,
+      vatRate: 15,
+      finalQuote: 17020,
+      adminNotes: 'Demo request — approved and ready for formal quotation.'
+    }
+  },
+
+  // 34. REQ-7115: Full Custom Design (Quote Sent)
+  {
+    id: 'REQ-7115',
+    type: 'Full Custom Design',
+    customerName: 'Noura Al-Zahrani',
+    customerEmail: 'noura.alzahrani@example.com',
+    customerPhone: '+966 59 711 1006',
+    jewellery: 'Arabic Name Pendant',
+    requestDetails: 'Create an 18K rose gold pendant with diamond accents spelling the name “نورة”.',
+    referenceImages: [
+      'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&auto=format&fit=crop&q=80'
+    ],
+    status: 'Quote Sent',
+    submittedDate: '28 Sep 2026, 12:05',
+    dateCategory: 'Last 7 Days',
+    fullCustomDesign: {
+      jewelleryType: 'Arabic Name Pendant',
+      materialPreference: '18K Rose Gold with Round Diamonds',
+      customerDescription: 'Flowing Arabic calligraphy pendant spelling “نورة”, accented with small bezel-set diamonds.',
+      photos: [
+        'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&auto=format&fit=crop&q=80'
+      ],
+      sizeMeasurements: 'Pendant width 32mm; chain length 45cm',
+      additionalRequirements: 'Soft polished edges and adjustable chain loops at 40cm and 42cm.',
+      customerBudget: 11000
+    },
+    customerNotes: 'Customer requested a seven-day quote validity period.',
+    quotation: {
+      goldValue: 5200,
+      stoneValue: 1800,
+      makingCharge: 1500,
+      customizationCharge: 700,
+      vatRate: 15,
+      finalQuote: 10580,
+      quoteDate: '30 Sep 2026',
+      expiryDate: '2026-10-07',
+      adminNotes: 'Demo quote sent with CAD preview and diamond specification.'
+    }
+  },
+
+  // 35. REQ-7116: Product Customization (New)
+  {
+    id: 'REQ-7116',
+    type: 'Product Customization',
+    customerName: 'Sara Al-Mutairi',
+    customerEmail: 'sara.almutairi@example.com',
+    customerPhone: '+966 50 711 1007',
+    jewellery: 'Diamond Drop Earrings',
+    requestDetails: 'Change yellow gold to white gold and upgrade the center stones.',
+    referenceImages: [
+      'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=800&auto=format&fit=crop&q=80'
+    ],
+    status: 'New',
+    submittedDate: '01 Oct 2026, 10:20',
+    dateCategory: 'Today',
+    originalProduct: {
+      name: 'Lustre Diamond Drop Earrings',
+      sku: 'VV-EAR-2116',
+      image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=800&auto=format&fit=crop&q=80',
+      originalPrice: 14800,
+      category: 'Earrings'
+    },
+    customChanges: {
+      goldKarat: '18K',
+      goldColor: 'White Gold',
+      stone: 'Upgrade center stones to 0.75ct each, VS clarity or better',
+      specialInstructions: 'Retain the current drop length and lever-back closure.'
+    },
+    customerNotes: 'Please provide natural diamond and lab-grown alternatives.',
+    quotation: {
+      originalPrice: 14800,
+      finalQuote: 0,
+      adminNotes: 'Demo request — stone sourcing options pending.'
+    }
+  },
+
+  // 36. REQ-7117: Full Custom Design (Under Review)
+  {
+    id: 'REQ-7117',
+    type: 'Full Custom Design',
+    customerName: 'Abdullah Al-Farsi',
+    customerEmail: 'abdullah.alfarsi@example.com',
+    customerPhone: '+966 55 711 1008',
+    jewellery: 'Emerald Ring',
+    requestDetails: 'Create an oval emerald ring with a diamond halo in 18K yellow gold.',
+    referenceImages: [
+      'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&auto=format&fit=crop&q=80'
+    ],
+    status: 'Under Review',
+    submittedDate: '29 Sep 2026, 17:30',
+    dateCategory: 'Last 7 Days',
+    fullCustomDesign: {
+      jewelleryType: 'Oval Emerald Halo Ring',
+      materialPreference: '18K Yellow Gold, Natural Emerald and Diamonds',
+      customerDescription: 'Low-profile oval emerald centerpiece with a fine diamond halo and split shoulders.',
+      photos: [
+        'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=800&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&auto=format&fit=crop&q=80'
+      ],
+      sizeMeasurements: 'Ring size 10; center emerald approximately 1.8ct',
+      additionalRequirements: 'Emerald must have moderate oil treatment or better disclosure.',
+      customerBudget: 28000
+    },
+    customerNotes: 'Customer prefers a rich green stone over maximum size.',
+    quotation: {
+      materialsEstimate: 20500,
+      laborEstimate: 3400,
+      finalQuote: 0,
+      adminNotes: 'Demo request — gemologist reviewing three emerald options.'
+    }
+  },
+
+  // 37. REQ-7118: Product Customization (New)
+  {
+    id: 'REQ-7118',
+    type: 'Product Customization',
+    customerName: 'Rawan Al-Shammari',
+    customerEmail: 'rawan.alshammari@example.com',
+    customerPhone: '+966 56 711 1009',
+    jewellery: 'Gold Necklace',
+    requestDetails: 'Shorten the chain and add a small initial pendant.',
+    referenceImages: [
+      'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&auto=format&fit=crop&q=80'
+    ],
+    status: 'New',
+    submittedDate: '30 Sep 2026, 15:05',
+    dateCategory: 'Last 7 Days',
+    originalProduct: {
+      name: 'Fine Cable Gold Necklace',
+      sku: 'VV-NCK-2118',
+      image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&auto=format&fit=crop&q=80',
+      originalPrice: 6400,
+      category: 'Necklaces'
+    },
+    customChanges: {
+      goldKarat: '18K',
+      goldColor: 'Yellow Gold',
+      size: 'Shorten from 50cm to 42cm',
+      engraving: 'Initial R pendant',
+      specialInstructions: 'Use the removed gold toward the initial pendant where possible.'
+    },
+    customerNotes: 'Pendant should remain subtle enough for daily wear.',
+    quotation: {
+      originalPrice: 6400,
+      finalQuote: 0,
+      adminNotes: 'Demo request — awaiting workshop assessment.'
+    }
+  },
+
+  // 38. REQ-7119: Full Custom Design (Awaiting Customer)
+  {
+    id: 'REQ-7119',
+    type: 'Full Custom Design',
+    customerName: 'Khalid Al-Salem',
+    customerEmail: 'khalid.alsalem@example.com',
+    customerPhone: '+966 53 711 1010',
+    jewellery: 'Men’s Chain',
+    requestDetails: 'Create a heavy-link 21K gold chain with a custom clasp.',
+    referenceImages: [
+      'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&auto=format&fit=crop&q=80'
+    ],
+    status: 'Awaiting Customer',
+    submittedDate: '28 Sep 2026, 09:50',
+    dateCategory: 'Last 7 Days',
+    fullCustomDesign: {
+      jewelleryType: 'Men’s Heavy Link Chain',
+      materialPreference: '21K Yellow Gold',
+      customerDescription: 'Solid heavy-link chain with a low-profile custom box clasp and safety catch.',
+      photos: [
+        'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&auto=format&fit=crop&q=80'
+      ],
+      sizeMeasurements: 'Proposed 60cm length and 8mm width',
+      additionalRequirements: 'Customer must confirm target weight range and clasp monogram.',
+      customerBudget: 42000
+    },
+    customerNotes: 'Awaiting confirmation between 85g and 100g finished weight.',
+    quotation: {
+      materialsEstimate: 32000,
+      laborEstimate: 4800,
+      finalQuote: 0,
+      adminNotes: 'Demo request — weight confirmation requested from customer.'
+    }
+  },
+
+  // 39. REQ-7120: Product Customization (Approved)
+  {
+    id: 'REQ-7120',
+    type: 'Product Customization',
+    customerName: 'Reem Al-Qahtani',
+    customerEmail: 'reem.alqahtani@example.com',
+    customerPhone: '+966 54 711 1011',
+    jewellery: 'Bridal Bangle',
+    requestDetails: 'Reduce the bangle size and add ruby accents.',
+    referenceImages: [
+      'https://images.unsplash.com/photo-1611591475806-2319c117ea8a?w=800&auto=format&fit=crop&q=80'
+    ],
+    status: 'Approved',
+    submittedDate: '27 Sep 2026, 13:35',
+    dateCategory: 'Last 7 Days',
+    originalProduct: {
+      name: 'Royal Floral Bridal Bangle',
+      sku: 'VV-BNG-2120',
+      image: 'https://images.unsplash.com/photo-1611591475806-2319c117ea8a?w=800&auto=format&fit=crop&q=80',
+      originalPrice: 22400,
+      category: 'Bangles'
+    },
+    customChanges: {
+      goldKarat: '21K',
+      goldColor: 'Yellow Gold',
+      stone: 'Add six small natural ruby accents',
+      size: 'Reduce inner diameter to 57mm',
+      specialInstructions: 'Keep the hinge and safety lock unchanged.'
+    },
+    customerNotes: 'Ruby color should match the bridal dress embroidery.',
+    quotation: {
+      originalPrice: 22400,
+      goldValue: 19600,
+      stoneValue: 2400,
+      makingCharge: 2100,
+      customizationCharge: 1100,
+      vatRate: 15,
+      finalQuote: 28980,
+      adminNotes: 'Demo request — approved after ruby color selection.'
+    }
+  },
+
+  // 40. REQ-7121: Full Custom Design (New)
+  {
+    id: 'REQ-7121',
+    type: 'Full Custom Design',
+    customerName: 'Amal Al-Harbi',
+    customerEmail: 'amal.alharbi@example.com',
+    customerPhone: '+966 50 711 1012',
+    jewellery: 'Diamond Pendant',
+    requestDetails: 'Design an “A & M” initials pendant in 18K white gold with small round diamonds.',
+    referenceImages: [
+      'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&auto=format&fit=crop&q=80'
+    ],
+    status: 'New',
+    submittedDate: '01 Oct 2026, 11:05',
+    dateCategory: 'Today',
+    fullCustomDesign: {
+      jewelleryType: 'Diamond Initials Pendant',
+      materialPreference: '18K White Gold with Round Diamonds',
+      customerDescription: 'Interlocking A and M initials with a delicate diamond-set connector and concealed bail.',
+      photos: [
+        'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&auto=format&fit=crop&q=80'
+      ],
+      sizeMeasurements: 'Pendant width about 25mm; 45cm fine cable chain',
+      additionalRequirements: 'Use small round diamonds and keep both initials equally prominent.',
+      customerBudget: 9500
+    },
+    customerNotes: 'Gift packaging requested for an engagement celebration.',
+    quotation: {
+      finalQuote: 0,
+      adminNotes: 'Demo request — initial design brief received.'
     }
   }
 ]

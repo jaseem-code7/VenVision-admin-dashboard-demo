@@ -87,8 +87,8 @@ export default function CustomJewelleryRequestsPage() {
   const rejectedCount = requests.filter(r => REJECTED_CUSTOM_STATUSES.includes(r.status)).length
 
   // Tab counts
-  const productCustomizationCount = requests.filter(r => r.type === 'Product Customization').length // 16
-  const fullCustomDesignCount = requests.filter(r => r.type === 'Full Custom Design').length // 12
+  const productCustomizationCount = requests.filter(r => r.type === 'Product Customization').length
+  const fullCustomDesignCount = requests.filter(r => r.type === 'Full Custom Design').length
 
   // Filtered requests
   const filteredRequests = useMemo(() => {
